@@ -117,6 +117,70 @@ def _shift_status(
     return "blocked"
 
 
+def get_week_detail(db: Session, week_dates: list[date], current_user_id, spots: list) -> dict:
+    """
+    Like get_week_availability but returns richer per-slot dicts for the weekly view:
+    {date: {spot_id: {shift: {"status": str, "reservation_id": UUID|None, "is_assigned_held": bool}}}}
+    """
+    start, end = week_dates[0], week_dates[-1]
+
+    reservations = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.date >= start,
+            models.Reservation.date <= end,
+            models.Reservation.cancelled_at.is_(None),
+        )
+        .all()
+    )
+    releases = (
+        db.query(models.Release)
+        .filter(
+            models.Release.date >= start,
+            models.Release.date <= end,
+            models.Release.retracted_at.is_(None),
+        )
+        .all()
+    )
+
+    res_index: dict[tuple, list] = {}
+    for r in reservations:
+        res_index.setdefault((r.spot_id, r.date), []).append(r)
+
+    release_index: dict[tuple, list] = {}
+    for r in releases:
+        release_index.setdefault((r.spot_id, r.date), []).append(r)
+
+    result: dict = {}
+    for d in week_dates:
+        result[d] = {}
+        for spot in spots:
+            day_res   = res_index.get((spot.id, d), [])
+            day_rel   = release_index.get((spot.id, d), [])
+            slot_detail: dict[Shift, dict] = {}
+            for shift in Shift:
+                status = _shift_status(spot, shift, current_user_id, day_res, day_rel)
+                res_id = None
+                is_assigned_held = False
+                if status == "mine":
+                    # Find the actual reservation (if any)
+                    for res in day_res:
+                        if _shifts_conflict(res.shift, shift) and str(res.user_id) == str(current_user_id):
+                            res_id = res.id
+                            break
+                    if res_id is None:
+                        # "mine" without reservation = implicitly held assigned spot
+                        is_assigned_held = True
+                slot_detail[shift] = {
+                    "status": status,
+                    "reservation_id": res_id,
+                    "is_assigned_held": is_assigned_held,
+                    "spot_id": spot.id,
+                }
+            result[d][spot.id] = slot_detail
+    return result
+
+
 def get_month_summary(
     db: Session,
     dates: list[date],

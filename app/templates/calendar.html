@@ -17,19 +17,42 @@
     .slot-btn, .slot-tag {
         display:block; width:100%; text-align:left;
         padding:.25rem .4rem; border-radius:3px;
-        font-size:.72rem; margin:.15rem 0; line-height:1.3;
-        border:none; cursor:default;
+        font-size:.72rem; margin:.1rem 0; line-height:1.3;
+        border:none; cursor:default; white-space:nowrap;
+        overflow:hidden; text-overflow:ellipsis;
     }
-    .slot-btn  { cursor:pointer; }
-    .slot-mine    { background:#dbeafe; color:#1e40af; }
-    .slot-free    { background:#d1fae5; color:#065f46; }
+    .slot-btn      { cursor:pointer; }
+    .slot-mine     { background:#dbeafe; color:#1e40af; }
+    .slot-assigned { background:#ede9fe; color:#5b21b6; }
+    .slot-free     { background:#d1fae5; color:#065f46; }
     .slot-free:hover { background:#a7f3d0; }
-    .slot-taken   { background:#fee2e2; color:#991b1b; }
-    .slot-blocked { background:#f3f4f6; color:#9ca3af; }
+    .slot-taken    { background:#fee2e2; color:#991b1b; }
+    .slot-blocked  { background:#f3f4f6; color:#9ca3af; }
+
+    .slot-action { display:flex; align-items:center; gap:.2rem; margin:.1rem 0; }
+    .slot-action .slot-tag, .slot-action .slot-assigned { flex:1; margin:0; }
+    .act-btn {
+        flex-shrink:0; width:20px; height:20px; border-radius:3px; border:none;
+        font-size:.65rem; cursor:pointer; display:flex;
+        align-items:center; justify-content:center; padding:0; line-height:1;
+    }
+    .act-cancel  { background:#fee2e2; color:#991b1b; }
+    .act-cancel:hover  { background:#fca5a5; }
+    .act-release { background:#ede9fe; color:#5b21b6; }
+    .act-release:hover { background:#c4b5fd; }
 
     .legend { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1rem; font-size:.75rem; }
     .legend-item { display:flex; align-items:center; gap:.3rem; }
     .legend-dot  { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+
+    @media (max-width: 700px) {
+        .cal-table { min-width:500px; }
+        .col-spot { width:90px; }
+        .week-nav { gap:.5rem; }
+        .week-nav h2 { font-size:.9rem; }
+        .slot-btn, .slot-tag { font-size:.65rem; padding:.2rem .3rem; }
+        .act-btn { width:16px; height:16px; font-size:.6rem; }
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -70,10 +93,43 @@
             {% set day_status = availability[d][spot.id] %}
             <td>
                 {% for shift in shifts %}
-                {% set status = day_status[shift] %}
+                {% set slot = day_status[shift] %}
+                {% set status = slot.status %}
                 {% set label = shift_short[shift] %}
+
                 {% if status == 'mine' %}
-                    <span class="slot-tag slot-mine">{{ label }}</span>
+                    {% if slot.reservation_id %}
+                        {# Skutečná rezervace — možnost zrušit #}
+                        <div class="slot-action">
+                            <span class="slot-tag slot-mine" title="{{ shift_labels[shift] }}">{{ label }}</span>
+                            {% if d >= today %}
+                            <form method="post" action="/reservations/{{ slot.reservation_id }}/cancel">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="act-btn act-cancel"
+                                    title="Zrušit rezervaci"
+                                    onclick="return confirm('Zrušit rezervaci {{ label }}?')">✕</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        {# Přidělené místo implicitně držené — možnost uvolnit #}
+                        <div class="slot-action">
+                            <span class="slot-tag slot-assigned" title="Přidělené — {{ shift_labels[shift] }}">{{ label }}</span>
+                            {% if d >= today %}
+                            <form method="post" action="/releases/">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="spot_id" value="{{ slot.spot_id }}">
+                                <input type="hidden" name="day" value="{{ d.isoformat() }}">
+                                <input type="hidden" name="shift" value="{{ shift.value }}">
+                                <input type="hidden" name="release_type" value="POOL">
+                                <button type="submit" class="act-btn act-release"
+                                    title="Uvolnit do sdíleného poolu"
+                                    onclick="return confirm('Uvolnit slot {{ label }} do poolu?')">↑</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
                 {% elif status == 'free' and d >= today %}
                     <form method="post" action="/reservations/" style="margin:0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -82,10 +138,12 @@
                         <input type="hidden" name="shift" value="{{ shift.value }}">
                         <button type="submit" class="slot-btn slot-free" title="{{ shift_labels[shift] }}">{{ label }}</button>
                     </form>
+
                 {% elif status == 'taken' %}
-                    <span class="slot-tag slot-taken">{{ label }}</span>
+                    <span class="slot-tag slot-taken" title="Obsazeno jinou osobou">{{ label }}</span>
+
                 {% elif status == 'blocked' %}
-                    <span class="slot-tag slot-blocked">{{ label }}</span>
+                    <span class="slot-tag slot-blocked" title="Přiděleno jiné osobě">{{ label }}</span>
                 {% endif %}
                 {% endfor %}
             </td>
@@ -97,10 +155,11 @@
 </div>
 
 <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#dbeafe"></div> Moje rezervace</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#dbeafe"></div> Moje rezervace <span style="color:#9ca3af">[✕ zrušit]</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ede9fe"></div> Moje přidělené místo <span style="color:#9ca3af">[↑ uvolnit]</span></div>
     <div class="legend-item"><div class="legend-dot" style="background:#d1fae5"></div> Volné — klikni pro rezervaci</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div> Obsazené</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #e5e7eb"></div> Blokované (přidělené jiné osobě)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div> Obsazeno jinou osobou</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #e5e7eb"></div> Blokované (přiděleno jiné osobě)</div>
 </div>
 
 {% endblock %}

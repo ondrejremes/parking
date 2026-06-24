@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.enums import Shift
 from app.services.auth import get_current_user_or_none, generate_csrf_token
-from app.services.availability import get_week_availability, get_month_summary
+from app.services.availability import get_week_availability, get_week_detail, get_month_summary
 from app import models
 
 router = APIRouter()
@@ -132,7 +132,7 @@ async def calendar_week(
     back_month = week_dates[0].strftime("%Y-%m")
 
     spots = db.query(models.Spot).filter_by(active=True).order_by(models.Spot.floor, models.Spot.number).all()
-    availability = get_week_availability(db, week_dates, user["id"])
+    availability = get_week_detail(db, week_dates, user["id"], spots)
 
     week_label = f"{week_dates[0].day}. {_CZECH_MONTHS_GEN[week_dates[0].month - 1]}"
 
