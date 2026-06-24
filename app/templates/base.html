@@ -3,21 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Parkování{% endblock %}</title>
+    <title>{% block title %}Parking — Alintrust{% endblock %}</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; }
-        nav { background: #1a56db; color: #fff; padding: .75rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
-        nav a { color: #fff; text-decoration: none; font-size: .9rem; }
-        nav a:hover { text-decoration: underline; }
-        nav .spacer { flex: 1; }
+
+        nav {
+            background: #4B2D8F;
+            color: #fff;
+            padding: .6rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            text-decoration: none;
+        }
+        .nav-brand img {
+            height: 28px;
+            width: auto;
+            filter: brightness(0) invert(1);
+        }
+        .nav-brand-sep {
+            width: 1px;
+            height: 20px;
+            background: rgba(255,255,255,.35);
+        }
+        .nav-brand-title {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: .02em;
+        }
+        nav a { color: rgba(255,255,255,.85); text-decoration: none; font-size: .875rem; }
+        nav a:hover { color: #fff; }
+        .nav-spacer { flex: 1; }
+        .nav-user { font-size: .8rem; color: rgba(255,255,255,.7); }
+
         main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+
         .btn { display: inline-block; padding: .4rem .9rem; border-radius: 4px; border: none; cursor: pointer; font-size: .875rem; text-decoration: none; }
-        .btn-primary { background: #1a56db; color: #fff; }
-        .btn-danger  { background: #e02424; color: #fff; }
+        .btn-primary   { background: #4B2D8F; color: #fff; }
+        .btn-primary:hover { background: #3d2478; }
+        .btn-danger    { background: #e02424; color: #fff; }
         .btn-secondary { background: #e5e7eb; color: #1a1a1a; }
+        .btn-secondary:hover { background: #d1d5db; }
+
         .alert { padding: .75rem 1rem; border-radius: 4px; margin-bottom: 1rem; }
         .alert-error { background: #fde8e8; color: #c81e1e; border: 1px solid #f8b4b4; }
+
         table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
         th, td { padding: .6rem .9rem; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: .875rem; }
         th { background: #f9fafb; font-weight: 600; }
@@ -26,15 +63,20 @@
 </head>
 <body>
     <nav>
-        <a href="/calendar"><strong>🅿 Parkování</strong></a>
+        <a href="/" class="nav-brand">
+            <img src="/static/logo.png" alt="Alintrust">
+            <span class="nav-brand-sep"></span>
+            <span class="nav-brand-title">Parking</span>
+        </a>
+
         {% if user %}
             <a href="/calendar">Kalendář</a>
             {% if user.is_admin %}
                 <a href="/admin/spots">Místa</a>
                 <a href="/admin/users">Uživatelé</a>
             {% endif %}
-            <span class="spacer"></span>
-            <span style="font-size:.875rem">{{ user.display_name }}</span>
+            <span class="nav-spacer"></span>
+            <span class="nav-user">{{ user.display_name }}</span>
             <a href="/auth/logout">Odhlásit</a>
         {% endif %}
     </nav>

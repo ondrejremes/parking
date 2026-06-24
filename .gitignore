@@ -9,4 +9,3 @@ dist/
 build/
 .venv/
 venv/
-alembic/versions/*.py

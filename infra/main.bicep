@@ -10,7 +10,7 @@ param appName string = 'parking'
 param containerImage string
 
 param azureTenantId string
-param emailFrom string = 'parking@example.com'
+param emailFrom string = 'parking@alintrust.cz'
 param reservationHorizonDays int = 31
 
 @secure()

@@ -2,9 +2,17 @@ services:
   app:
     build: .
     container_name: parking
-    env_file: .env
+    # .env is mounted and loaded by python-dotenv — avoids Docker Compose
+    # expanding $ signs in bcrypt hashes when using env_file
+    environment:
+      DATABASE_URL: postgresql://parking:parking@db/parking
     ports:
       - "8000:8000"
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
     depends_on:
       db:
         condition: service_healthy

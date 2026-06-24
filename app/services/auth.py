@@ -1,6 +1,6 @@
 import secrets
+import bcrypt
 from fastapi import HTTPException, Request
-from passlib.hash import bcrypt
 from sqlalchemy.orm import Session
 from app import models
 from app.config import ADMIN_USERNAME, ADMIN_PASSWORD_HASH
@@ -29,7 +29,7 @@ def verify_admin_password(username: str, password: str) -> bool:
         return False
     if not ADMIN_PASSWORD_HASH:
         return False
-    return bcrypt.verify(password, ADMIN_PASSWORD_HASH)
+    return bcrypt.checkpw(password.encode(), ADMIN_PASSWORD_HASH.encode())
 
 
 def upsert_sso_user(db: Session, azure_oid: str, email: str, display_name: str) -> models.User:

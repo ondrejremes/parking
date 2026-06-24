@@ -27,7 +27,7 @@ async def calendar_view(
 ):
     user = get_current_user_or_none(request)
     if not user:
-        return RedirectResponse("/auth/login")
+        return RedirectResponse("/auth/admin-login")
 
     try:
         anchor = date.fromisoformat(week) if week else date.today()

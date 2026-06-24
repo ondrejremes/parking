@@ -1,33 +1,48 @@
 {% extends "base.html" %}
-{% block title %}Přihlášení — Parkování{% endblock %}
+{% block title %}Přihlášení — Parking{% endblock %}
 {% block content %}
-<div style="max-width:360px;margin:4rem auto;background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-    <h1 style="font-size:1.25rem;margin-bottom:1.5rem">Přihlášení</h1>
+<div style="max-width:380px;margin:4rem auto;background:#fff;padding:2.5rem;border-radius:10px;box-shadow:0 4px 16px rgba(75,45,143,.12)">
+
+    <div style="text-align:center;margin-bottom:2rem">
+        <img src="/static/logo.png" alt="Alintrust" style="height:36px;width:auto;margin-bottom:1rem">
+        <h1 style="font-size:1.1rem;color:#1a1a1a;font-weight:600">Přihlášení do aplikace Parking</h1>
+    </div>
 
     {% if error %}
     <div class="alert alert-error">{{ error }}</div>
     {% endif %}
 
-    <a href="/auth/login" class="btn btn-primary" style="display:block;text-align:center;margin-bottom:1.5rem">
+    <a href="/auth/login" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:1.5rem;padding:.6rem 1rem;font-size:.9rem">
+        <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="10" height="10" fill="#f25022"/><rect x="11" width="10" height="10" fill="#7fba00"/>
+            <rect y="11" width="10" height="10" fill="#00a4ef"/><rect x="11" y="11" width="10" height="10" fill="#ffb900"/>
+        </svg>
         Přihlásit přes Microsoft 365
     </a>
 
-    <hr style="margin-bottom:1.5rem;border:none;border-top:1px solid #e5e7eb">
-    <p style="font-size:.8rem;color:#6b7280;margin-bottom:1rem">Administrátor</p>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+        <div style="flex:1;height:1px;background:#e5e7eb"></div>
+        <span style="font-size:.75rem;color:#9ca3af">nebo</span>
+        <div style="flex:1;height:1px;background:#e5e7eb"></div>
+    </div>
+
+    <p style="font-size:.75rem;color:#9ca3af;margin-bottom:.75rem;text-align:center">Přihlášení administrátora</p>
 
     <form method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <div style="margin-bottom:1rem">
-            <label style="display:block;font-size:.875rem;margin-bottom:.25rem">Uživatelské jméno</label>
-            <input type="text" name="username" required
-                style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px">
+        <div style="margin-bottom:.75rem">
+            <label style="display:block;font-size:.8rem;color:#374151;margin-bottom:.25rem">Uživatelské jméno</label>
+            <input type="text" name="username" required autofocus
+                style="width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:5px;font-size:.875rem;outline:none"
+                onfocus="this.style.borderColor='#4B2D8F'" onblur="this.style.borderColor='#d1d5db'">
         </div>
         <div style="margin-bottom:1.25rem">
-            <label style="display:block;font-size:.875rem;margin-bottom:.25rem">Heslo</label>
+            <label style="display:block;font-size:.8rem;color:#374151;margin-bottom:.25rem">Heslo</label>
             <input type="password" name="password" required
-                style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px">
+                style="width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:5px;font-size:.875rem;outline:none"
+                onfocus="this.style.borderColor='#4B2D8F'" onblur="this.style.borderColor='#d1d5db'">
         </div>
-        <button type="submit" class="btn btn-secondary" style="width:100%">Přihlásit jako admin</button>
+        <button type="submit" class="btn btn-secondary" style="width:100%;padding:.5rem">Přihlásit</button>
     </form>
 </div>
 {% endblock %}
