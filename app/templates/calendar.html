@@ -2,164 +2,155 @@
 {% block title %}Kalendář — Parking{% endblock %}
 {% block head %}
 <style>
-    .week-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
-    .week-nav h2 { font-size:1.05rem; font-weight:600; }
-
-    .cal-wrap { overflow-x:auto; }
-    .cal-table { width:100%; border-collapse:collapse; background:#fff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,.08); min-width:700px; }
-    .cal-table th, .cal-table td { border:1px solid #e5e7eb; padding:.45rem .6rem; font-size:.78rem; vertical-align:top; }
-    .cal-table th { background:#f9fafb; text-align:center; white-space:nowrap; }
-    .col-spot { width:140px; }
-
-    .spot-label { font-weight:600; font-size:.8rem; }
-    .spot-meta  { font-size:.7rem; color:#6b7280; margin-top:.1rem; }
-
-    .slot-btn, .slot-tag {
-        display:block; width:100%; text-align:left;
-        padding:.25rem .4rem; border-radius:3px;
-        font-size:.72rem; margin:.1rem 0; line-height:1.3;
-        border:none; cursor:default; white-space:nowrap;
-        overflow:hidden; text-overflow:ellipsis;
+    .week-nav {
+        display: flex; align-items: center; gap: .75rem;
+        margin-bottom: 1.25rem; flex-wrap: wrap;
     }
-    .slot-btn      { cursor:pointer; }
-    .slot-mine     { background:#dbeafe; color:#1e40af; }
-    .slot-assigned { background:#ede9fe; color:#5b21b6; }
-    .slot-free     { background:#d1fae5; color:#065f46; }
-    .slot-free:hover { background:#a7f3d0; }
-    .slot-taken    { background:#fee2e2; color:#991b1b; }
-    .slot-blocked  { background:#f3f4f6; color:#9ca3af; }
+    .week-nav h2 { font-size: 1rem; font-weight: 700; flex: 1; }
 
-    .slot-action { display:flex; align-items:center; gap:.2rem; margin:.1rem 0; }
-    .slot-action .slot-tag, .slot-action .slot-assigned { flex:1; margin:0; }
-    .act-btn {
-        flex-shrink:0; width:20px; height:20px; border-radius:3px; border:none;
-        font-size:.65rem; cursor:pointer; display:flex;
-        align-items:center; justify-content:center; padding:0; line-height:1;
+    .day-card {
+        background: #fff; border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        margin-bottom: .75rem; overflow: hidden;
     }
-    .act-cancel  { background:#fee2e2; color:#991b1b; }
-    .act-cancel:hover  { background:#fca5a5; }
-    .act-release { background:#ede9fe; color:#5b21b6; }
-    .act-release:hover { background:#c4b5fd; }
+    .day-header {
+        padding: .55rem 1rem; display: flex; align-items: center;
+        gap: .75rem; border-bottom: 1px solid #f0f0f0;
+        background: #fafafa;
+    }
+    .day-header.today { background: #f5f0ff; border-bottom-color: #e9d5ff; }
+    .day-header.past  { opacity: .6; }
+    .day-name { font-weight: 700; font-size: .9rem; color: #1a1a1a; }
+    .day-date { font-size: .8rem; color: #6b7280; }
+    .today-badge {
+        font-size: .68rem; font-weight: 600; color: #4B2D8F;
+        background: #ede9fe; padding: .1rem .4rem; border-radius: 10px;
+    }
 
-    .legend { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1rem; font-size:.75rem; }
-    .legend-item { display:flex; align-items:center; gap:.3rem; }
-    .legend-dot  { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+    .day-body { padding: .6rem 1rem; }
+    .day-empty { font-size: .82rem; color: #9ca3af; padding: .4rem 0; }
 
-    @media (max-width: 700px) {
-        .cal-table { min-width:500px; }
-        .col-spot { width:90px; }
-        .week-nav { gap:.5rem; }
-        .week-nav h2 { font-size:.9rem; }
-        .slot-btn, .slot-tag { font-size:.65rem; padding:.2rem .3rem; }
-        .act-btn { width:16px; height:16px; font-size:.6rem; }
+    .res-row {
+        display: flex; align-items: center; gap: .6rem;
+        padding: .45rem 0; border-bottom: 1px solid #f9fafb;
+    }
+    .res-row:last-child { border-bottom: none; }
+
+    .res-spot {
+        font-weight: 700; font-size: .85rem; color: #1a1a1a;
+        min-width: 70px;
+    }
+    .res-period {
+        flex: 1; font-size: .82rem;
+    }
+    .badge {
+        display: inline-block; font-size: .72rem; padding: .2rem .5rem;
+        border-radius: 12px; font-weight: 500;
+    }
+    .badge-res      { background: #dbeafe; color: #1e40af; }
+    .badge-assigned { background: #ede9fe; color: #5b21b6; }
+    .badge-free     { background: #d1fae5; color: #065f46; }
+
+    .btn-cancel {
+        padding: .3rem .7rem; border-radius: 5px; border: none;
+        background: #fee2e2; color: #991b1b; font-size: .78rem;
+        cursor: pointer; white-space: nowrap; font-weight: 500;
+    }
+    .btn-cancel:hover { background: #fca5a5; }
+    .btn-release {
+        padding: .3rem .7rem; border-radius: 5px; border: none;
+        background: #ede9fe; color: #5b21b6; font-size: .78rem;
+        cursor: pointer; white-space: nowrap; font-weight: 500;
+    }
+    .btn-release:hover { background: #c4b5fd; }
+
+    .free-link {
+        display: inline-block; margin-top: .35rem;
+        font-size: .78rem; color: #065f46; background: #d1fae5;
+        padding: .25rem .6rem; border-radius: 5px; text-decoration: none;
+    }
+    .free-link:hover { background: #a7f3d0; }
+
+    @media (max-width: 500px) {
+        .week-nav h2 { font-size: .85rem; }
+        .res-spot { min-width: 55px; font-size: .78rem; }
+        .res-period { font-size: .75rem; }
+        .btn-cancel, .btn-release { font-size: .72rem; padding: .25rem .5rem; }
     }
 </style>
+
+<script>
+function confirmCancel(msg, form) {
+    if (confirm(msg)) form.submit();
+    return false;
+}
+</script>
 {% endblock %}
+
 {% block content %}
-
 <div class="week-nav">
-    <a href="/calendar?week={{ prev_week }}" class="btn btn-secondary">← předchozí</a>
-    <h2>Týden {{ week_start_label }}</h2>
-    <a href="/calendar?week={{ next_week }}" class="btn btn-secondary">následující →</a>
-    <a href="/calendar" class="btn btn-secondary" style="margin-left:auto">Tento týden</a>
+    <a href="/calendar/week?week={{ prev_week }}" class="btn btn-secondary">←</a>
+    <h2>{{ week_label }}</h2>
+    <a href="/calendar/week?week={{ next_week }}" class="btn btn-secondary">→</a>
 </div>
 
-<div class="cal-wrap">
-<table class="cal-table">
-    <thead>
-        <tr>
-            <th class="col-spot">Místo</th>
-            {% for d in week_dates %}
-            <th>
-                <div style="font-weight:700">{{ czech_days[d.weekday()] }}</div>
-                <div style="font-weight:400;color:#6b7280">{{ d.day }}.{{ d.month }}.</div>
-                {% if d == today %}<div style="color:#4B2D8F;font-size:.68rem;font-weight:600">dnes</div>{% endif %}
-            </th>
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for spot in spots %}
-        <tr>
-            <td>
-                <div class="spot-label">{{ floor_label(spot.floor) }} / {{ spot.number }}</div>
-                <div class="spot-meta">
-                    {% if spot.spot_type.value == 'ASSIGNED' %}
-                        přidělené{% if spot.assigned_user %} · {{ spot.assigned_user.display_name }}{% endif %}
-                    {% else %}sdílené{% endif %}
-                </div>
-            </td>
-            {% for d in week_dates %}
-            {% set day_status = availability[d][spot.id] %}
-            <td>
-                {% for shift in shifts %}
-                {% set slot = day_status[shift] %}
-                {% set status = slot.status %}
-                {% set label = shift_short[shift] %}
+{% for day in days %}
+<div class="day-card">
+    <div class="day-header{% if day.is_today %} today{% elif day.is_past %} past{% endif %}">
+        <span class="day-name">{{ day.label }}</span>
+        {% if day.is_today %}<span class="today-badge">dnes</span>{% endif %}
+    </div>
+    <div class="day-body">
 
-                {% if status == 'mine' %}
-                    {% if slot.reservation_id %}
-                        {# Skutečná rezervace — možnost zrušit #}
-                        <div class="slot-action">
-                            <span class="slot-tag slot-mine" title="{{ shift_labels[shift] }}">{{ label }}</span>
-                            {% if d >= today %}
-                            <form method="post" action="/reservations/{{ slot.reservation_id }}/cancel">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                <button type="submit" class="act-btn act-cancel"
-                                    title="Zrušit rezervaci"
-                                    onclick="return confirm('Zrušit rezervaci {{ label }}?')">✕</button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        {# Přidělené místo implicitně držené — možnost uvolnit #}
-                        <div class="slot-action">
-                            <span class="slot-tag slot-assigned" title="Přidělené — {{ shift_labels[shift] }}">{{ label }}</span>
-                            {% if d >= today %}
-                            <form method="post" action="/releases/">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                <input type="hidden" name="spot_id" value="{{ slot.spot_id }}">
-                                <input type="hidden" name="day" value="{{ d.isoformat() }}">
-                                <input type="hidden" name="shift" value="{{ shift.value }}">
-                                <input type="hidden" name="release_type" value="POOL">
-                                <button type="submit" class="act-btn act-release"
-                                    title="Uvolnit do sdíleného poolu"
-                                    onclick="return confirm('Uvolnit slot {{ label }} do poolu?')">↑</button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    {% endif %}
+        {% if not day.reservations and not day.assigned_held %}
+            {# Žádné rezervace ani přidělené místo #}
+            {% if not day.is_past and day.free_spots %}
+            <div class="day-empty">Nemáte žádnou rezervaci.</div>
+            <a href="/calendar/week?week={{ day.date.isoformat() }}" class="free-link">
+                {{ day.free_spots | length }}× volné místo — zarezervovat
+            </a>
+            {% else %}
+            <div class="day-empty">{% if day.is_past %}Bez rezervace.{% else %}Žádná volná místa.{% endif %}</div>
+            {% endif %}
+        {% endif %}
 
-                {% elif status == 'free' and d >= today %}
-                    <form method="post" action="/reservations/" style="margin:0">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="spot_id" value="{{ spot.id }}">
-                        <input type="hidden" name="day" value="{{ d.isoformat() }}">
-                        <input type="hidden" name="shift" value="{{ shift.value }}">
-                        <button type="submit" class="slot-btn slot-free" title="{{ shift_labels[shift] }}">{{ label }}</button>
-                    </form>
-
-                {% elif status == 'taken' %}
-                    <span class="slot-tag slot-taken" title="Obsazeno jinou osobou">{{ label }}</span>
-
-                {% elif status == 'blocked' %}
-                    <span class="slot-tag slot-blocked" title="Přiděleno jiné osobě">{{ label }}</span>
-                {% endif %}
-                {% endfor %}
-            </td>
-            {% endfor %}
-        </tr>
+        {% for spot, shift, res_id in day.reservations %}
+        <div class="res-row">
+            <span class="res-spot">{{ floor_label(spot.floor) }}/{{ spot.number }}</span>
+            <span class="res-period">
+                <span class="badge badge-res">{{ shift_labels[shift] }}</span>
+            </span>
+            {% if not day.is_past %}
+            <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0"
+                  onsubmit="return confirmCancel('Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_labels[shift] }}?', this)">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn-cancel">Zrušit</button>
+            </form>
+            {% endif %}
+        </div>
         {% endfor %}
-    </tbody>
-</table>
-</div>
 
-<div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#dbeafe"></div> Moje rezervace <span style="color:#9ca3af">[✕ zrušit]</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ede9fe"></div> Moje přidělené místo <span style="color:#9ca3af">[↑ uvolnit]</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#d1fae5"></div> Volné — klikni pro rezervaci</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div> Obsazeno jinou osobou</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #e5e7eb"></div> Blokované (přiděleno jiné osobě)</div>
-</div>
+        {% for spot, spot_id in day.assigned_held %}
+        <div class="res-row">
+            <span class="res-spot">{{ floor_label(spot.floor) }}/{{ spot.number }}</span>
+            <span class="res-period">
+                <span class="badge badge-assigned">Přidělené — celý den</span>
+            </span>
+            {% if not day.is_past %}
+            <form method="post" action="/releases/" style="margin:0"
+                  onsubmit="return confirmCancel('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?', this)">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="spot_id" value="{{ spot_id }}">
+                <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
+                <input type="hidden" name="shift" value="FULL_DAY">
+                <input type="hidden" name="release_type" value="POOL">
+                <button type="submit" class="btn-release">Uvolnit do poolu</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
 
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

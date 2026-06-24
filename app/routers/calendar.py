@@ -132,18 +132,31 @@ async def calendar_week(
     back_month = week_dates[0].strftime("%Y-%m")
 
     spots = db.query(models.Spot).filter_by(active=True).order_by(models.Spot.floor, models.Spot.number).all()
-    availability = get_week_detail(db, week_dates, user["id"], spots)
+    summary = get_month_summary(db, week_dates, user["id"], spots)
 
-    week_label = f"{week_dates[0].day}. {_CZECH_MONTHS_GEN[week_dates[0].month - 1]}"
+    week_label = (
+        f"{week_dates[0].day}. {_CZECH_MONTHS_GEN[week_dates[0].month - 1]}"
+        f" – {week_dates[-1].day}. {_CZECH_MONTHS_GEN[week_dates[-1].month - 1]} {week_dates[-1].year}"
+    )
+
+    days = []
+    for d in week_dates:
+        day_data = summary.get(d, {"reservations": [], "assigned_held": [], "free_spots": []})
+        days.append({
+            "date": d,
+            "label": f"{_CZECH_DAYS_SHORT[d.weekday()]} {d.day}. {_CZECH_MONTHS_GEN[d.month - 1]}",
+            "is_today": d == today,
+            "is_past": d < today,
+            "reservations": day_data["reservations"],       # (spot, shift, res_id)
+            "assigned_held": day_data["assigned_held"],     # (spot, spot_id)
+            "free_spots": day_data["free_spots"],           # [spot, ...]
+        })
 
     ctx = _base_ctx(request, user)
     ctx.update({
-        "spots": spots,
-        "week_dates": week_dates,
-        "availability": availability,
+        "days": days,
         "prev_week": prev_week,
         "next_week": next_week,
-        "back_month": back_month,
         "week_label": week_label,
         "today": today,
         "csrf_token": generate_csrf_token(request),
