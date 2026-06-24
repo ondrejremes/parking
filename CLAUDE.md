@@ -56,6 +56,36 @@ Týdenní kalendářový pohled:
 - Spravuje seznam míst a uživatelů
 - Může udělit `is_admin` SSO uživateli
 
+## Nasazení — Azure architektura
+
+```
+Internet
+  └─→ Azure Front Door (WAF + OWASP CRS 3.2, DDoS, SSL offload, HTTPS enforce)
+        └─→ Azure Container Apps  (FastAPI, privátní ingress)
+              ├─→ Azure Container Registry  (Docker image)
+              ├─→ Azure Database for PostgreSQL Flexible Server  (private endpoint)
+              ├─→ Azure Key Vault  (secrets přes managed identity)
+              └─→ Azure Communication Services  (email)
+```
+
+PostgreSQL nemá public endpoint — dostupný pouze z VNet Container Apps prostředí.
+Secrets (DB connection string, OAuth client secret, session key) jsou v Key Vault; aplikace je čte přes managed identity bez jakýchkoli credentials v kódu nebo env.
+
+IaC: **Bicep** (`infra/` složka).
+
+### Bezpečnost po vrstvách
+
+| Vrstva | Opatření |
+|---|---|
+| WAF | OWASP CRS 3.2 managed ruleset + rate limiting na Azure Front Door |
+| Síť | Container Apps v VNet, PostgreSQL pouze přes private endpoint |
+| Auth | Entra ID OAuth s PKCE, session v podepsaném cookie + CSRF token na všech POST |
+| Secrets | Azure Key Vault + managed identity — žádná hesla v env nebo kódu |
+| HTTPS | Front Door vynucuje redirect, HSTS header v odpovědích |
+| HTTP headers | CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy v FastAPI middleware |
+| DB | SQLAlchemy ORM — parametrizované dotazy všude, žádné raw SQL |
+| Container | non-root user, `python:3.12-slim` base image |
+
 ## Datový model
 
 Enums: `SpotType` (ASSIGNED/SHARED), `Shift` (FULL_DAY/DAY/NIGHT), `ReleaseType` (POOL/TRANSFER)
@@ -77,32 +107,43 @@ FULL_DAY konflikt s DAY/NIGHT pro stejné (spot, date) řeší `availability` se
 
 ```
 parking/
-├── docker-compose.yml
+├── infra/                   # Bicep IaC
+│   ├── main.bicep           # entry point — orchestruje moduly
+│   ├── modules/
+│   │   ├── containerapp.bicep
+│   │   ├── frontdoor.bicep
+│   │   ├── postgres.bicep
+│   │   ├── keyvault.bicep
+│   │   └── network.bicep
+│   └── parameters/
+│       └── prod.bicepparam
+├── docker-compose.yml       # lokální vývoj (app + postgres)
 ├── Dockerfile
 ├── requirements.txt
 ├── .env.example
 ├── alembic.ini
 ├── alembic/versions/
 └── app/
-    ├── main.py              # FastAPI app, router registration, middleware
-    ├── config.py            # os.getenv / dotenv
+    ├── main.py              # FastAPI app, router registration, security middleware
+    ├── config.py            # Settings přes os.getenv / dotenv
     ├── database.py          # SQLAlchemy engine + session
+    ├── middleware.py        # CSP, HSTS, X-Frame-Options, CSRF hlavičky
     ├── models/
     │   ├── user.py
     │   ├── spot.py
     │   ├── release.py
     │   └── reservation.py
     ├── routers/
-    │   ├── auth.py          # /auth/login (SSO), /auth/callback, /auth/admin-login
+    │   ├── auth.py          # /auth/login (SSO + PKCE), /auth/callback, /auth/admin-login
     │   ├── calendar.py      # GET / — týdenní pohled
-    │   ├── reservations.py  # POST + DELETE /reservations
+    │   ├── reservations.py  # POST + DELETE /reservations (CSRF chráněné)
     │   ├── releases.py      # POST + DELETE /releases
     │   └── admin.py         # /admin — správa míst a uživatelů
     ├── services/
     │   ├── auth.py          # OAuth token exchange, session, lokální admin ověření
     │   ├── availability.py  # výpočet volných slotů pro daný týden/uživatele
     │   ├── booking.py       # create/cancel s kontrolou konfliktů
-    │   └── email.py         # potvrzení + připomenutí
+    │   └── email.py         # Azure Communication Services — potvrzení + připomenutí
     └── templates/
         ├── base.html
         ├── calendar.html
