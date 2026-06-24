@@ -12,7 +12,7 @@ var adminUser = 'pgadmin'
 resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = {
   name: serverName
   location: location
-  sku: { name: 'Standard_B2s'; tier: 'Burstable' }
+  sku: { name: 'Standard_B1ms'; tier: 'Burstable' }
   properties: {
     version: '16'
     administratorLogin: adminUser
