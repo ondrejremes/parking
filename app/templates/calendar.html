@@ -119,18 +119,6 @@
     }
 </style>
 
-<script>
-function openReserveDialog(dialogId) {
-    document.getElementById(dialogId).showModal();
-}
-function closeDialog(dialogId) {
-    document.getElementById(dialogId).close();
-}
-function confirmCancel(msg, form) {
-    if (confirm(msg)) form.submit();
-    return false;
-}
-</script>
 {% endblock %}
 
 {% block content %}
@@ -151,7 +139,7 @@ function confirmCancel(msg, form) {
         {% if not day.reservations and not day.assigned_held %}
             {% if not day.is_past and day.free_options %}
             <div class="day-empty">Nemáte žádnou rezervaci.</div>
-            <button class="btn-reserve" onclick="openReserveDialog('dlg-{{ day.date.isoformat() }}')" style="margin-top:.35rem">
+            <button class="btn-reserve" data-open-dialog="dlg-{{ day.date.isoformat() }}" style="margin-top:.35rem">
                 {{ day.free_spots | length }}× volné — zarezervovat
             </button>
             {% else %}
@@ -164,7 +152,7 @@ function confirmCancel(msg, form) {
                 <span class="res-period"><span class="badge badge-res">{{ shift_labels[shift] }}</span></span>
                 {% if not day.is_past %}
                 <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0"
-                      onsubmit="return confirmCancel('Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_labels[shift] }}?', this)">
+                      data-confirm="Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_labels[shift] }}?">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn-cancel">Zrušit</button>
                 </form>
@@ -178,7 +166,7 @@ function confirmCancel(msg, form) {
                 <span class="res-period"><span class="badge badge-assigned">Přidělené — celý den</span></span>
                 {% if not day.is_past %}
                 <form method="post" action="/releases/" style="margin:0"
-                      onsubmit="return confirmCancel('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?', this)">
+                      data-confirm="Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="spot_id" value="{{ spot_id }}">
                     <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
@@ -192,7 +180,7 @@ function confirmCancel(msg, form) {
 
             {% if not day.is_past and day.free_options %}
             <div style="margin-top:.5rem">
-                <button class="btn-reserve" onclick="openReserveDialog('dlg-{{ day.date.isoformat() }}')">
+                <button class="btn-reserve" data-open-dialog="dlg-{{ day.date.isoformat() }}">
                     + Další rezervace ({{ day.free_spots | length }}× volné)
                 </button>
             </div>
@@ -207,7 +195,7 @@ function confirmCancel(msg, form) {
 <dialog id="dlg-{{ day.date.isoformat() }}">
     <div class="dialog-header">
         <h3>Rezervovat — {{ day.label }}</h3>
-        <button class="dialog-close" onclick="closeDialog('dlg-{{ day.date.isoformat() }}')">✕</button>
+        <button class="dialog-close" data-close-dialog="dlg-{{ day.date.isoformat() }}">✕</button>
     </div>
     <form method="post" action="/reservations/">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -218,7 +206,7 @@ function confirmCancel(msg, form) {
             <label class="option-label">
                 <input type="radio" name="spot_shift"
                        value="{{ spot.id }}|{{ shift.value }}"
-                       onchange="document.getElementById('sid-{{ day.date.isoformat() }}').value=this.value.split('|')[0]; document.getElementById('shf-{{ day.date.isoformat() }}').value=this.value.split('|')[1]"
+                       data-pick-date="{{ day.date.isoformat() }}"
                        {% if loop.first %}checked{% endif %}>
                 <span>
                     <div class="option-text">{{ shift_labels[shift] }}</div>
@@ -233,7 +221,7 @@ function confirmCancel(msg, form) {
         </div>
         <div class="dialog-footer">
             <button type="button" class="btn-dialog-cancel"
-                    onclick="closeDialog('dlg-{{ day.date.isoformat() }}')">Zrušit</button>
+                    data-close-dialog="dlg-{{ day.date.isoformat() }}">Zrušit</button>
             <button type="submit" class="btn-confirm">Zarezervovat</button>
         </div>
     </form>

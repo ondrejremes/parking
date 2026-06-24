@@ -117,15 +117,6 @@
     }
 </style>
 
-<script>
-function openDlg(id) { document.getElementById(id).showModal(); }
-function closeDlg(id) { document.getElementById(id).close(); }
-function pickOption(radioEl, dateKey) {
-    var parts = radioEl.value.split('|');
-    document.getElementById('sid-' + dateKey).value = parts[0];
-    document.getElementById('shf-' + dateKey).value = parts[1];
-}
-</script>
 {% endblock %}
 
 {% block content %}
@@ -171,10 +162,10 @@ function pickOption(radioEl, dateKey) {
                         {{ floor_label(spot.floor) }}/{{ spot.number }} · {{ shift_short[shift] }}
                     </span>
                     {% if not is_past %}
-                    <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0">
+                    <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0"
+                          data-confirm="Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_short[shift] }}?">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="cancel-btn" title="Zrušit"
-                            onclick="return confirm('Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_short[shift] }}?')">✕</button>
+                        <button type="submit" class="cancel-btn" title="Zrušit">✕</button>
                     </form>
                     {% endif %}
                 </div>
@@ -187,14 +178,14 @@ function pickOption(radioEl, dateKey) {
                         {{ floor_label(spot.floor) }}/{{ spot.number }} · celý den
                     </span>
                     {% if not is_past %}
-                    <form method="post" action="/releases/" style="margin:0">
+                    <form method="post" action="/releases/" style="margin:0"
+                          data-confirm="Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <input type="hidden" name="spot_id" value="{{ spot_id }}">
                         <input type="hidden" name="day" value="{{ dk }}">
                         <input type="hidden" name="shift" value="FULL_DAY">
                         <input type="hidden" name="release_type" value="POOL">
-                        <button type="submit" class="release-btn" title="Uvolnit do poolu"
-                            onclick="return confirm('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?')">↑</button>
+                        <button type="submit" class="release-btn" title="Uvolnit do poolu">↑</button>
                     </form>
                     {% endif %}
                 </div>
@@ -202,7 +193,7 @@ function pickOption(radioEl, dateKey) {
 
                 {# Volná místa — tlačítko otevírá dialog #}
                 {% if not is_past and day_data.free_options %}
-                <button class="free-badge" onclick="openDlg('dlg-{{ dk }}')">
+                <button class="free-badge" data-open-dialog="dlg-{{ dk }}">
                     {% if is_weekend %}Celý den volno
                     {% else %}{{ day_data.free_spots | length }}× volno{% endif %} →
                 </button>
@@ -228,7 +219,7 @@ function pickOption(radioEl, dateKey) {
 <dialog id="dlg-{{ dk }}">
     <div class="dlg-header">
         <h3>Rezervovat — {{ czech_days[d.weekday()] }} {{ d.day }}. {{ d.month }}.</h3>
-        <button class="dlg-close" onclick="closeDlg('dlg-{{ dk }}')">✕</button>
+        <button class="dlg-close" data-close-dialog="dlg-{{ dk }}">✕</button>
     </div>
     <form method="post" action="/reservations/">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -241,7 +232,7 @@ function pickOption(radioEl, dateKey) {
             <label class="opt-label">
                 <input type="radio" name="opt_{{ dk }}"
                        value="{{ spot.id }}|{{ shift.value }}"
-                       onchange="pickOption(this, '{{ dk }}')"
+                       data-pick-date="{{ dk }}"
                        {% if loop.first %}checked{% endif %}>
                 <span>
                     <div class="opt-period">{{ shift_labels[shift] }}</div>
@@ -251,7 +242,7 @@ function pickOption(radioEl, dateKey) {
             {% endfor %}
         </div>
         <div class="dlg-foot">
-            <button type="button" class="btn-dlg-cancel" onclick="closeDlg('dlg-{{ dk }}')">Zrušit</button>
+            <button type="button" class="btn-dlg-cancel" data-close-dialog="dlg-{{ dk }}">Zrušit</button>
             <button type="submit" class="btn-confirm">Zarezervovat</button>
         </div>
     </form>
