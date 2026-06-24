@@ -21,7 +21,7 @@ Session uložena v podepsaném cookie (Starlette SessionMiddleware).
 
 ## Typy parkovacích míst
 
-Parkoviště má do 30 míst, každé místo má identitu (číslo nebo název). Dva typy:
+Parkoviště má do 30 míst, každé místo je identifikováno číslem a patrem (např. patro 1, místo 7). Dva typy:
 
 - **Přidělené místo** — trvale přiřazeno konkrétnímu zaměstnanci adminem. Vlastník ho může:
   - Uvolnit na celý den → místo přejde do sdíleného poolu
@@ -62,7 +62,7 @@ Enums: `SpotType` (ASSIGNED/SHARED), `Shift` (FULL_DAY/DAY/NIGHT), `ReleaseType`
 
 **`users`**: id (UUID), azure_oid (unique, nullable pro lokálního admina), email, display_name, is_admin
 
-**`spots`**: id (UUID), code (unique, např. „A1"), spot_type, assigned_user_id (FK users, nullable), active
+**`spots`**: id (UUID), floor (patro, str, např. „1", „P1"), number (číslo místa), spot_type, assigned_user_id (FK users, nullable), active. Unique constraint na (floor, number).
 
 **`releases`** — vlastník uvolňuje přidělené místo:
 id (UUID), spot_id, date, shift, release_type, transfer_to_user_id (nullable), retracted_at (nullable)
