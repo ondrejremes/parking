@@ -32,6 +32,18 @@ def verify_admin_password(username: str, password: str) -> bool:
     return bcrypt.checkpw(password.encode(), ADMIN_PASSWORD_HASH.encode())
 
 
+def verify_local_user(db: Session, username: str, password: str) -> models.User | None:
+    user = db.query(models.User).filter(
+        models.User.email == username,
+        models.User.password_hash.isnot(None),
+    ).first()
+    if not user:
+        return None
+    if bcrypt.checkpw(password.encode(), user.password_hash.encode()):
+        return user
+    return None
+
+
 def upsert_sso_user(db: Session, azure_oid: str, email: str, display_name: str) -> models.User:
     user = db.query(models.User).filter_by(azure_oid=azure_oid).first()
     if user:

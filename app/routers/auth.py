@@ -8,7 +8,7 @@ from app.database import get_db
 from app.config import (
     AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID, AZURE_REDIRECT_URI, BASE_URL
 )
-from app.services.auth import verify_admin_password, upsert_sso_user, generate_csrf_token, validate_csrf
+from app.services.auth import verify_admin_password, verify_local_user, upsert_sso_user, generate_csrf_token, validate_csrf
 
 router = APIRouter(prefix="/auth")
 templates = Jinja2Templates(directory="app/templates")
@@ -70,22 +70,35 @@ async def admin_login(
     username: str = Form(...),
     password: str = Form(...),
     csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
 ):
     validate_csrf(request, csrf_token)
-    if not verify_admin_password(username, password):
-        csrf = generate_csrf_token(request)
-        return templates.TemplateResponse(
-            "auth/login.html",
-            {"request": request, "csrf_token": csrf, "error": "Nesprávné přihlašovací údaje"},
-            status_code=401,
-        )
-    request.session["user"] = {
-        "id": "local-admin",
-        "email": username,
-        "display_name": "Admin",
-        "is_admin": True,
-    }
-    return RedirectResponse("/", status_code=303)
+
+    if verify_admin_password(username, password):
+        request.session["user"] = {
+            "id": "local-admin",
+            "email": username,
+            "display_name": "Admin",
+            "is_admin": True,
+        }
+        return RedirectResponse("/", status_code=303)
+
+    local_user = verify_local_user(db, username, password)
+    if local_user:
+        request.session["user"] = {
+            "id": str(local_user.id),
+            "email": local_user.email,
+            "display_name": local_user.display_name,
+            "is_admin": local_user.is_admin,
+        }
+        return RedirectResponse("/", status_code=303)
+
+    csrf = generate_csrf_token(request)
+    return templates.TemplateResponse(
+        "auth/login.html",
+        {"request": request, "csrf_token": csrf, "error": "Nesprávné přihlašovací údaje"},
+        status_code=401,
+    )
 
 
 @router.get("/logout")
