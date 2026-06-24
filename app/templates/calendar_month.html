@@ -31,42 +31,103 @@
     .day-num.today-num { color:#4B2D8F; }
     .today-dot { width:6px; height:6px; background:#4B2D8F; border-radius:50%; }
 
-    .res-tag {
-        display:block; font-size:.68rem; padding:.15rem .35rem;
-        border-radius:3px; background:#dbeafe; color:#1e40af;
-        margin:.1rem 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-        max-width:100%;
-    }
-    .free-badge {
-        display:inline-block; font-size:.68rem; padding:.15rem .35rem;
-        border-radius:3px; background:#d1fae5; color:#065f46;
-        margin-top:.2rem; cursor:pointer; border:none; width:100%; text-align:left;
-    }
-    .free-badge:hover { background:#a7f3d0; }
-    .week-link {
-        font-size:.65rem; color:#9ca3af; text-decoration:none; display:block; margin-top:.25rem;
-    }
-    .week-link:hover { color:#4B2D8F; }
-
-    @media (max-width: 700px) {
-        .month-grid table { font-size:.7rem; }
-        .day-cell { min-height:55px; padding:.3rem .2rem; }
-        .day-num { font-size:.72rem; }
-        .res-tag { font-size:.62rem; padding:.1rem .25rem; }
-        .free-badge { font-size:.62rem; padding:.1rem .25rem; }
-        .month-nav h2 { font-size:.9rem; }
-        .month-nav .btn { padding:.3rem .6rem; font-size:.8rem; }
-    }
     .res-block { display:flex; align-items:center; gap:.2rem; margin:.1rem 0; }
-    .res-block .res-tag { flex:1; margin:0; }
+    .res-tag {
+        flex:1; display:block; font-size:.68rem; padding:.15rem .35rem;
+        border-radius:3px; background:#dbeafe; color:#1e40af;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0;
+    }
+    .res-tag-assigned { background:#ede9fe; color:#5b21b6; }
     .cancel-btn {
         flex-shrink:0; width:18px; height:18px; border-radius:3px; border:none;
         background:#fee2e2; color:#991b1b; font-size:.65rem; cursor:pointer;
         display:flex; align-items:center; justify-content:center; padding:0;
     }
     .cancel-btn:hover { background:#fca5a5; }
+    .release-btn {
+        flex-shrink:0; width:18px; height:18px; border-radius:3px; border:none;
+        background:#ede9fe; color:#5b21b6; font-size:.65rem; cursor:pointer;
+        display:flex; align-items:center; justify-content:center; padding:0;
+    }
+    .release-btn:hover { background:#c4b5fd; }
+
+    .free-badge {
+        display:block; font-size:.68rem; padding:.2rem .35rem;
+        border-radius:3px; background:#d1fae5; color:#065f46;
+        margin-top:.25rem; cursor:pointer; border:none; width:100%;
+        text-align:left; font-family:inherit;
+    }
+    .free-badge:hover { background:#a7f3d0; }
+
+    /* Dialog */
+    dialog {
+        border:none; border-radius:10px; padding:0;
+        box-shadow:0 8px 32px rgba(0,0,0,.2);
+        max-width:360px; width:90%;
+    }
+    dialog::backdrop { background:rgba(0,0,0,.4); }
+    .dlg-header {
+        padding:.85rem 1.1rem .7rem;
+        border-bottom:1px solid #e5e7eb;
+        display:flex; align-items:center; justify-content:space-between;
+    }
+    .dlg-header h3 { font-size:.9rem; font-weight:700; margin:0; }
+    .dlg-close {
+        background:none; border:none; font-size:1rem; cursor:pointer;
+        color:#9ca3af; padding:.1rem .35rem; border-radius:4px; line-height:1;
+    }
+    .dlg-close:hover { background:#f3f4f6; color:#374151; }
+    .dlg-body  { padding:.85rem 1.1rem; }
+    .dlg-foot  {
+        padding:.65rem 1.1rem .85rem;
+        display:flex; gap:.5rem; justify-content:flex-end;
+        border-top:1px solid #f0f0f0;
+    }
+
+    .opt-label {
+        display:flex; align-items:flex-start; gap:.55rem;
+        padding:.5rem .65rem; border-radius:6px; cursor:pointer;
+        margin-bottom:.3rem; border:2px solid #e5e7eb;
+    }
+    .opt-label:hover { border-color:#4B2D8F; background:#f5f0ff; }
+    .opt-label:has(input:checked) { border-color:#4B2D8F; background:#f5f0ff; }
+    .opt-label input[type=radio] { margin-top:.15rem; accent-color:#4B2D8F; }
+    .opt-period { font-size:.84rem; font-weight:500; }
+    .opt-spot   { font-size:.72rem; color:#6b7280; margin-top:.1rem; }
+
+    .btn-confirm {
+        padding:.4rem 1rem; border-radius:5px; border:none;
+        background:#4B2D8F; color:#fff; font-size:.85rem;
+        cursor:pointer; font-weight:600;
+    }
+    .btn-confirm:hover { background:#3d2478; }
+    .btn-dlg-cancel {
+        padding:.4rem .9rem; border-radius:5px;
+        border:1px solid #e5e7eb; background:#fff;
+        color:#374151; font-size:.85rem; cursor:pointer;
+    }
+
+    @media (max-width:700px) {
+        .month-grid table { font-size:.7rem; }
+        .day-cell { min-height:55px; padding:.3rem .2rem; }
+        .day-num { font-size:.72rem; }
+        .res-tag { font-size:.62rem; padding:.1rem .25rem; }
+        .free-badge { font-size:.62rem; padding:.15rem .25rem; }
+        .month-nav h2 { font-size:.9rem; }
+    }
 </style>
+
+<script>
+function openDlg(id) { document.getElementById(id).showModal(); }
+function closeDlg(id) { document.getElementById(id).close(); }
+function pickOption(radioEl, dateKey) {
+    var parts = radioEl.value.split('|');
+    document.getElementById('sid-' + dateKey).value = parts[0];
+    document.getElementById('shf-' + dateKey).value = parts[1];
+}
+</script>
 {% endblock %}
+
 {% block content %}
 
 <div class="month-nav">
@@ -91,17 +152,19 @@
             {% if d is none %}
             <td class="day-cell other-month"></td>
             {% else %}
-            {% set is_today = (d == today) %}
-            {% set is_past = (d < today) %}
+            {% set is_today  = (d == today) %}
+            {% set is_past   = (d < today) %}
             {% set is_weekend = (d.weekday() >= 5) %}
-            {% set day_data = summary.get(d, {'reservations': [], 'assigned_held': [], 'free_spots': []}) %}
+            {% set day_data  = summary.get(d, {'reservations': [], 'assigned_held': [], 'free_spots': [], 'free_options': []}) %}
+            {% set dk = d.isoformat() %}
+
             <td class="day-cell{% if is_today %} today{% elif is_past %} past{% endif %}{% if is_weekend %} weekend{% endif %}">
                 <div class="day-num{% if is_today %} today-num{% endif %}">
                     <span>{{ d.day }}</span>
                     {% if is_today %}<span class="today-dot"></span>{% endif %}
                 </div>
 
-                {# Skutečné rezervace uživatele + možnost zrušit #}
+                {# Skutečné rezervace + zrušit #}
                 {% for spot, shift, res_id in day_data.reservations %}
                 <div class="res-block">
                     <span class="res-tag" title="{{ shift_labels[shift] }}">
@@ -110,46 +173,41 @@
                     {% if not is_past %}
                     <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="cancel-btn" title="Zrušit rezervaci"
-                            onclick="return confirm('Zrušit rezervaci a uvolnit místo do poolu?')">✕</button>
+                        <button type="submit" class="cancel-btn" title="Zrušit"
+                            onclick="return confirm('Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_short[shift] }}?')">✕</button>
                     </form>
                     {% endif %}
                 </div>
                 {% endfor %}
 
-                {# Přidělená místa implicitně držená (celý den) + možnost uvolnit #}
+                {# Přidělená místa + uvolnit #}
                 {% for spot, spot_id in day_data.assigned_held %}
                 <div class="res-block">
-                    <span class="res-tag" style="background:#ede9fe;color:#5b21b6;" title="Přidělené místo — celý den">
+                    <span class="res-tag res-tag-assigned" title="Přidělené — celý den">
                         {{ floor_label(spot.floor) }}/{{ spot.number }} · celý den
                     </span>
                     {% if not is_past %}
                     <form method="post" action="/releases/" style="margin:0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <input type="hidden" name="spot_id" value="{{ spot_id }}">
-                        <input type="hidden" name="day" value="{{ d.isoformat() }}">
+                        <input type="hidden" name="day" value="{{ dk }}">
                         <input type="hidden" name="shift" value="FULL_DAY">
                         <input type="hidden" name="release_type" value="POOL">
-                        <button type="submit" class="cancel-btn" style="background:#ede9fe;color:#5b21b6;"
-                            title="Uvolnit do poolu"
+                        <button type="submit" class="release-btn" title="Uvolnit do poolu"
                             onclick="return confirm('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?')">↑</button>
                     </form>
                     {% endif %}
                 </div>
                 {% endfor %}
 
-                {# Volná místa k rezervaci #}
-                {% if not is_past %}
-                    {% set fc = day_data.free_spots | length %}
-                    {% if fc > 0 %}
-                    <a href="/calendar/week?week={{ d.isoformat() }}" class="free-badge">
-                        {% if is_weekend %}Celý den volno →
-                        {% else %}{{ fc }}× volno →{% endif %}
-                    </a>
-                    {% endif %}
+                {# Volná místa — tlačítko otevírá dialog #}
+                {% if not is_past and day_data.free_options %}
+                <button class="free-badge" onclick="openDlg('dlg-{{ dk }}')">
+                    {% if is_weekend %}Celý den volno
+                    {% else %}{{ day_data.free_spots | length }}× volno{% endif %} →
+                </button>
                 {% endif %}
 
-                <a href="/calendar/week?week={{ d.isoformat() }}" class="week-link">detail →</a>
             </td>
             {% endif %}
             {% endfor %}
@@ -158,6 +216,50 @@
     </tbody>
 </table>
 </div>
+
+{# Dialogy mimo tabulku — jeden na každý den s volnými místy #}
+{% for week in weeks %}
+{% for d in week %}
+{% if d is not none %}
+{% set is_past = (d < today) %}
+{% set day_data = summary.get(d, {'free_options': []}) %}
+{% set dk = d.isoformat() %}
+{% if not is_past and day_data.free_options %}
+<dialog id="dlg-{{ dk }}">
+    <div class="dlg-header">
+        <h3>Rezervovat — {{ czech_days[d.weekday()] }} {{ d.day }}. {{ d.month }}.</h3>
+        <button class="dlg-close" onclick="closeDlg('dlg-{{ dk }}')">✕</button>
+    </div>
+    <form method="post" action="/reservations/">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="day" value="{{ dk }}">
+        <input type="hidden" id="sid-{{ dk }}" name="spot_id" value="{{ day_data.free_options[0][0].id }}">
+        <input type="hidden" id="shf-{{ dk }}" name="shift" value="{{ day_data.free_options[0][1].value }}">
+        <div class="dlg-body">
+            <p style="font-size:.78rem;color:#6b7280;margin-bottom:.65rem">Vyberte časový slot a místo:</p>
+            {% for spot, shift in day_data.free_options %}
+            <label class="opt-label">
+                <input type="radio" name="opt_{{ dk }}"
+                       value="{{ spot.id }}|{{ shift.value }}"
+                       onchange="pickOption(this, '{{ dk }}')"
+                       {% if loop.first %}checked{% endif %}>
+                <span>
+                    <div class="opt-period">{{ shift_labels[shift] }}</div>
+                    <div class="opt-spot">{{ floor_label(spot.floor) }} / {{ spot.number }}</div>
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+        <div class="dlg-foot">
+            <button type="button" class="btn-dlg-cancel" onclick="closeDlg('dlg-{{ dk }}')">Zrušit</button>
+            <button type="submit" class="btn-confirm">Zarezervovat</button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
 
 <div style="display:flex;gap:1rem;margin-top:1rem;font-size:.75rem;flex-wrap:wrap">
     <span style="display:flex;align-items:center;gap:.3rem">

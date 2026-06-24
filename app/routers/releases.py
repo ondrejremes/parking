@@ -33,7 +33,7 @@ async def release(
         release_type=release_type,
         transfer_to_user_id=transfer_to_user_id or None,
     )
-    return RedirectResponse(f"/calendar?week={day.isoformat()}", status_code=303)
+    return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
 
 
 @router.post("/{release_id}/retract")
@@ -46,4 +46,4 @@ async def retract(
     validate_csrf(request, csrf_token)
     user = get_current_user(request)
     rel = retract_release(db, release_id=release_id, owner_id=user["id"])
-    return RedirectResponse(f"/calendar?week={rel.date.isoformat()}", status_code=303)
+    return RedirectResponse(f"/calendar?month={rel.date.strftime('%Y-%m')}", status_code=303)

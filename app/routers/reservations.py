@@ -29,7 +29,7 @@ async def reserve(
     spot = db.query(models.Spot).filter_by(id=spot_id).first()
     email_service.send_confirmation(user["email"], spot.floor, spot.number, day, shift)
 
-    return RedirectResponse(f"/calendar?week={day.isoformat()}", status_code=303)
+    return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
 
 
 @router.post("/{reservation_id}/cancel")
