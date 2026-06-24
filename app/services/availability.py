@@ -124,27 +124,111 @@ def get_month_summary(
     spots: list[models.Spot],
 ) -> dict[date, dict]:
     """
-    Returns per-day summary for the monthly calendar view:
-    {date: {'my_reservations': [(spot, shift), ...], 'free_slots': [(spot, shift), ...]}}
+    Returns per-day summary for monthly calendar.
+    {date: {
+        'reservations': [(spot, shift), ...],     # actual DB reservations by user
+        'assigned_held': [spot, ...],             # user's assigned spots held without explicit reservation
+        'free_spots': [spot, ...],                # spots with at least one free shift
+    }}
     """
     if not dates:
         return {}
 
-    full_avail = get_week_availability(db, dates, user_id)
+    import uuid as _uuid
+    try:
+        _uuid.UUID(str(user_id))
+    except (ValueError, AttributeError):
+        # Non-UUID user_id (e.g. stale session) — return empty summary
+        return {d: {"reservations": [], "assigned_held": [], "free_spots": []} for d in dates}
+
+    start, end = min(dates), max(dates)
     spot_map = {spot.id: spot for spot in spots}
+
+    # User's actual reservations in range
+    user_reservations = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.user_id == user_id,
+            models.Reservation.date >= start,
+            models.Reservation.date <= end,
+            models.Reservation.cancelled_at.is_(None),
+        )
+        .all()
+    )
+    # Index: date → list of (spot, shift, reservation_id)
+    res_by_date: dict[date, list] = {}
+    for r in user_reservations:
+        spot = spot_map.get(r.spot_id)
+        if spot:
+            res_by_date.setdefault(r.date, []).append((spot, r.shift, r.id))
+
+    # Spots assigned to this user (held implicitly — no reservation needed)
+    assigned_spots = [s for s in spots if str(s.assigned_user_id) == str(user_id)]
+
+    # Active releases by the owner (days when they released their spot)
+    released = set()
+    if assigned_spots:
+        releases = (
+            db.query(models.Release)
+            .filter(
+                models.Release.spot_id.in_([s.id for s in assigned_spots]),
+                models.Release.date >= start,
+                models.Release.date <= end,
+                models.Release.retracted_at.is_(None),
+            )
+            .all()
+        )
+        # A spot is fully released on a day if FULL_DAY or both DAY+NIGHT released
+        release_shifts: dict[tuple, set] = {}
+        for rel in releases:
+            key = (rel.spot_id, rel.date)
+            release_shifts.setdefault(key, set()).add(rel.shift)
+
+        for spot in assigned_spots:
+            for d in dates:
+                key = (spot.id, d)
+                shifts_released = release_shifts.get(key, set())
+                fully_released = (
+                    Shift.FULL_DAY in shifts_released
+                    or (Shift.DAY in shifts_released and Shift.NIGHT in shifts_released)
+                )
+                if not fully_released:
+                    released_tuple = (spot.id, d)
+                    # not released = held by owner
+                else:
+                    released.add((spot.id, d))
+
+    # Free spots per day (from full availability — only for future dates, performance)
+    future_dates = [d for d in dates if d >= date.today()]
+    full_avail = get_week_availability(db, future_dates, user_id) if future_dates else {}
 
     summary: dict[date, dict] = {}
     for d in dates:
-        my_res: list = []
-        free_spots: list = []   # unique spots with at least one free shift
-        seen: set = set()
-        for spot_id, shifts in full_avail[d].items():
-            spot = spot_map[spot_id]
-            for shift, status in shifts.items():
-                if status == "mine":
-                    my_res.append((spot, shift))
-                elif status == "free" and spot_id not in seen:
-                    free_spots.append(spot)
-                    seen.add(spot_id)
-        summary[d] = {"my_reservations": my_res, "free_spots": free_spots}
+        # Actual reservations: (spot, shift, res_id)
+        my_res = res_by_date.get(d, [])
+
+        # Assigned spots held implicitly: (spot, spot_id)
+        reserved_spot_ids = {spot.id for spot, _, _ in my_res}
+        held = [
+            (s, s.id) for s in assigned_spots
+            if (s.id, d) not in released and s.id not in reserved_spot_ids
+        ]
+
+        # Free spots
+        free_spots: list = []
+        if d in full_avail:
+            seen: set = set()
+            for spot_id, shifts in full_avail[d].items():
+                spot = spot_map[spot_id]
+                for status in shifts.values():
+                    if status == "free" and spot_id not in seen:
+                        free_spots.append(spot)
+                        seen.add(spot_id)
+                        break
+
+        summary[d] = {
+            "reservations": my_res,
+            "assigned_held": held,
+            "free_spots": free_spots,
+        }
     return summary

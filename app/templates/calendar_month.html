@@ -47,6 +47,14 @@
         font-size:.65rem; color:#9ca3af; text-decoration:none; display:block; margin-top:.25rem;
     }
     .week-link:hover { color:#4B2D8F; }
+    .res-block { display:flex; align-items:center; gap:.2rem; margin:.1rem 0; }
+    .res-block .res-tag { flex:1; margin:0; }
+    .cancel-btn {
+        flex-shrink:0; width:18px; height:18px; border-radius:3px; border:none;
+        background:#fee2e2; color:#991b1b; font-size:.65rem; cursor:pointer;
+        display:flex; align-items:center; justify-content:center; padding:0;
+    }
+    .cancel-btn:hover { background:#fca5a5; }
 </style>
 {% endblock %}
 {% block content %}
@@ -76,32 +84,62 @@
             {% set is_today = (d == today) %}
             {% set is_past = (d < today) %}
             {% set is_weekend = (d.weekday() >= 5) %}
-            {% set day_data = summary.get(d, {'my_reservations': [], 'free_count': 0}) %}
+            {% set day_data = summary.get(d, {'reservations': [], 'assigned_held': [], 'free_spots': []}) %}
             <td class="day-cell{% if is_today %} today{% elif is_past %} past{% endif %}{% if is_weekend %} weekend{% endif %}">
                 <div class="day-num{% if is_today %} today-num{% endif %}">
                     <span>{{ d.day }}</span>
                     {% if is_today %}<span class="today-dot"></span>{% endif %}
                 </div>
 
-                {% for spot, shift in day_data.my_reservations %}
-                <span class="res-tag" title="{{ shift_labels[shift] }}">
-                    {{ floor_label(spot.floor) }}/{{ spot.number }} · {{ shift_short[shift] }}
-                </span>
+                {# Skutečné rezervace uživatele + možnost zrušit #}
+                {% for spot, shift, res_id in day_data.reservations %}
+                <div class="res-block">
+                    <span class="res-tag" title="{{ shift_labels[shift] }}">
+                        {{ floor_label(spot.floor) }}/{{ spot.number }} · {{ shift_short[shift] }}
+                    </span>
+                    {% if not is_past %}
+                    <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="cancel-btn" title="Zrušit rezervaci"
+                            onclick="return confirm('Zrušit rezervaci a uvolnit místo do poolu?')">✕</button>
+                    </form>
+                    {% endif %}
+                </div>
                 {% endfor %}
 
+                {# Přidělená místa implicitně držená (celý den) + možnost uvolnit #}
+                {% for spot, spot_id in day_data.assigned_held %}
+                <div class="res-block">
+                    <span class="res-tag" style="background:#ede9fe;color:#5b21b6;" title="Přidělené místo — celý den">
+                        {{ floor_label(spot.floor) }}/{{ spot.number }} · celý den
+                    </span>
+                    {% if not is_past %}
+                    <form method="post" action="/releases/" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="spot_id" value="{{ spot_id }}">
+                        <input type="hidden" name="day" value="{{ d.isoformat() }}">
+                        <input type="hidden" name="shift" value="FULL_DAY">
+                        <input type="hidden" name="release_type" value="POOL">
+                        <button type="submit" class="cancel-btn" style="background:#ede9fe;color:#5b21b6;"
+                            title="Uvolnit do poolu"
+                            onclick="return confirm('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?')">↑</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {# Volná místa k rezervaci #}
                 {% if not is_past %}
                     {% set fc = day_data.free_spots | length %}
                     {% if fc > 0 %}
                     <a href="/calendar/week?week={{ d.isoformat() }}" class="free-badge">
                         {% if is_weekend %}Celý den volno →
-                        {% else %}{{ fc }}× volno — zarezervovat →{% endif %}
+                        {% else %}{{ fc }}× volno →{% endif %}
                     </a>
                     {% endif %}
                 {% endif %}
 
-                {% if not is_weekend %}
-                <a href="/calendar/week?week={{ d.isoformat() }}" class="week-link">detail týdne →</a>
-                {% endif %}
+                <a href="/calendar/week?week={{ d.isoformat() }}" class="week-link">detail →</a>
             </td>
             {% endif %}
             {% endfor %}
@@ -116,7 +154,10 @@
         <span style="width:12px;height:12px;background:#dbeafe;border-radius:2px;display:inline-block"></span> Moje rezervace
     </span>
     <span style="display:flex;align-items:center;gap:.3rem">
-        <span style="width:12px;height:12px;background:#d1fae5;border-radius:2px;display:inline-block"></span> Volné sloty
+        <span style="width:12px;height:12px;background:#ede9fe;border-radius:2px;display:inline-block"></span> Přidělené místo (celý den)
+    </span>
+    <span style="display:flex;align-items:center;gap:.3rem">
+        <span style="width:12px;height:12px;background:#d1fae5;border-radius:2px;display:inline-block"></span> Volné k rezervaci
     </span>
     <span style="display:flex;align-items:center;gap:.3rem">
         <span style="width:12px;height:12px;background:#f5f0ff;border-radius:2px;display:inline-block"></span> Dnes
