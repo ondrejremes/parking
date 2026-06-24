@@ -20,36 +20,29 @@
     }
     .day-header.today { background: #f5f0ff; border-bottom-color: #e9d5ff; }
     .day-header.past  { opacity: .6; }
-    .day-name { font-weight: 700; font-size: .9rem; color: #1a1a1a; }
-    .day-date { font-size: .8rem; color: #6b7280; }
+    .day-name  { font-weight: 700; font-size: .9rem; color: #1a1a1a; }
     .today-badge {
         font-size: .68rem; font-weight: 600; color: #4B2D8F;
         background: #ede9fe; padding: .1rem .4rem; border-radius: 10px;
     }
 
     .day-body { padding: .6rem 1rem; }
-    .day-empty { font-size: .82rem; color: #9ca3af; padding: .4rem 0; }
+    .day-empty { font-size: .82rem; color: #9ca3af; padding: .35rem 0; }
 
     .res-row {
         display: flex; align-items: center; gap: .6rem;
         padding: .45rem 0; border-bottom: 1px solid #f9fafb;
     }
     .res-row:last-child { border-bottom: none; }
+    .res-spot  { font-weight: 700; font-size: .85rem; min-width: 70px; }
+    .res-period { flex: 1; font-size: .82rem; }
 
-    .res-spot {
-        font-weight: 700; font-size: .85rem; color: #1a1a1a;
-        min-width: 70px;
-    }
-    .res-period {
-        flex: 1; font-size: .82rem;
-    }
     .badge {
         display: inline-block; font-size: .72rem; padding: .2rem .5rem;
         border-radius: 12px; font-weight: 500;
     }
     .badge-res      { background: #dbeafe; color: #1e40af; }
     .badge-assigned { background: #ede9fe; color: #5b21b6; }
-    .badge-free     { background: #d1fae5; color: #065f46; }
 
     .btn-cancel {
         padding: .3rem .7rem; border-radius: 5px; border: none;
@@ -63,23 +56,76 @@
         cursor: pointer; white-space: nowrap; font-weight: 500;
     }
     .btn-release:hover { background: #c4b5fd; }
-
-    .free-link {
-        display: inline-block; margin-top: .35rem;
-        font-size: .78rem; color: #065f46; background: #d1fae5;
-        padding: .25rem .6rem; border-radius: 5px; text-decoration: none;
+    .btn-reserve {
+        padding: .3rem .75rem; border-radius: 5px; border: none;
+        background: #d1fae5; color: #065f46; font-size: .82rem;
+        cursor: pointer; font-weight: 600;
     }
-    .free-link:hover { background: #a7f3d0; }
+    .btn-reserve:hover { background: #a7f3d0; }
+
+    /* Dialog */
+    dialog {
+        border: none; border-radius: 10px; padding: 0;
+        box-shadow: 0 8px 32px rgba(0,0,0,.18);
+        max-width: 380px; width: 90%;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.4); }
+    .dialog-header {
+        padding: 1rem 1.25rem .75rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .dialog-header h3 { font-size: .95rem; font-weight: 700; margin: 0; }
+    .dialog-close {
+        background: none; border: none; font-size: 1.1rem; cursor: pointer;
+        color: #9ca3af; padding: .1rem .3rem; border-radius: 4px;
+    }
+    .dialog-close:hover { background: #f3f4f6; color: #374151; }
+    .dialog-body { padding: 1rem 1.25rem; }
+    .dialog-footer {
+        padding: .75rem 1.25rem 1rem;
+        display: flex; gap: .5rem; justify-content: flex-end;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .option-label {
+        display: flex; align-items: flex-start; gap: .6rem;
+        padding: .55rem .7rem; border-radius: 6px;
+        cursor: pointer; margin-bottom: .35rem;
+        border: 2px solid #e5e7eb; transition: border-color .1s;
+    }
+    .option-label:hover { border-color: #4B2D8F; background: #f5f0ff; }
+    .option-label input[type=radio] { margin-top: .1rem; accent-color: #4B2D8F; }
+    .option-label input[type=radio]:checked + .option-text { color: #4B2D8F; }
+    .option-label:has(input:checked) { border-color: #4B2D8F; background: #f5f0ff; }
+    .option-text { font-size: .85rem; }
+    .option-spot { font-size: .72rem; color: #6b7280; margin-top: .1rem; }
+
+    .btn-confirm {
+        padding: .45rem 1.1rem; border-radius: 5px; border: none;
+        background: #4B2D8F; color: #fff; font-size: .875rem;
+        cursor: pointer; font-weight: 600;
+    }
+    .btn-confirm:hover { background: #3d2478; }
+    .btn-dialog-cancel {
+        padding: .45rem 1rem; border-radius: 5px; border: 1px solid #e5e7eb;
+        background: #fff; color: #374151; font-size: .875rem; cursor: pointer;
+    }
 
     @media (max-width: 500px) {
         .week-nav h2 { font-size: .85rem; }
         .res-spot { min-width: 55px; font-size: .78rem; }
-        .res-period { font-size: .75rem; }
-        .btn-cancel, .btn-release { font-size: .72rem; padding: .25rem .5rem; }
+        .btn-cancel, .btn-release, .btn-reserve { font-size: .72rem; padding: .25rem .5rem; }
     }
 </style>
 
 <script>
+function openReserveDialog(dialogId) {
+    document.getElementById(dialogId).showModal();
+}
+function closeDialog(dialogId) {
+    document.getElementById(dialogId).close();
+}
 function confirmCancel(msg, form) {
     if (confirm(msg)) form.submit();
     return false;
@@ -103,54 +149,96 @@ function confirmCancel(msg, form) {
     <div class="day-body">
 
         {% if not day.reservations and not day.assigned_held %}
-            {# Žádné rezervace ani přidělené místo #}
-            {% if not day.is_past and day.free_spots %}
+            {% if not day.is_past and day.free_options %}
             <div class="day-empty">Nemáte žádnou rezervaci.</div>
-            <a href="/calendar/week?week={{ day.date.isoformat() }}" class="free-link">
-                {{ day.free_spots | length }}× volné místo — zarezervovat
-            </a>
+            <button class="btn-reserve" onclick="openReserveDialog('dlg-{{ day.date.isoformat() }}')" style="margin-top:.35rem">
+                {{ day.free_spots | length }}× volné — zarezervovat
+            </button>
             {% else %}
             <div class="day-empty">{% if day.is_past %}Bez rezervace.{% else %}Žádná volná místa.{% endif %}</div>
             {% endif %}
+        {% else %}
+            {% for spot, shift, res_id in day.reservations %}
+            <div class="res-row">
+                <span class="res-spot">{{ floor_label(spot.floor) }}/{{ spot.number }}</span>
+                <span class="res-period"><span class="badge badge-res">{{ shift_labels[shift] }}</span></span>
+                {% if not day.is_past %}
+                <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0"
+                      onsubmit="return confirmCancel('Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_labels[shift] }}?', this)">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn-cancel">Zrušit</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {% for spot, spot_id in day.assigned_held %}
+            <div class="res-row">
+                <span class="res-spot">{{ floor_label(spot.floor) }}/{{ spot.number }}</span>
+                <span class="res-period"><span class="badge badge-assigned">Přidělené — celý den</span></span>
+                {% if not day.is_past %}
+                <form method="post" action="/releases/" style="margin:0"
+                      onsubmit="return confirmCancel('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?', this)">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="spot_id" value="{{ spot_id }}">
+                    <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
+                    <input type="hidden" name="shift" value="FULL_DAY">
+                    <input type="hidden" name="release_type" value="POOL">
+                    <button type="submit" class="btn-release">Uvolnit do poolu</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {% if not day.is_past and day.free_options %}
+            <div style="margin-top:.5rem">
+                <button class="btn-reserve" onclick="openReserveDialog('dlg-{{ day.date.isoformat() }}')">
+                    + Další rezervace ({{ day.free_spots | length }}× volné)
+                </button>
+            </div>
+            {% endif %}
         {% endif %}
-
-        {% for spot, shift, res_id in day.reservations %}
-        <div class="res-row">
-            <span class="res-spot">{{ floor_label(spot.floor) }}/{{ spot.number }}</span>
-            <span class="res-period">
-                <span class="badge badge-res">{{ shift_labels[shift] }}</span>
-            </span>
-            {% if not day.is_past %}
-            <form method="post" action="/reservations/{{ res_id }}/cancel" style="margin:0"
-                  onsubmit="return confirmCancel('Zrušit rezervaci {{ floor_label(spot.floor) }}/{{ spot.number }} — {{ shift_labels[shift] }}?', this)">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="btn-cancel">Zrušit</button>
-            </form>
-            {% endif %}
-        </div>
-        {% endfor %}
-
-        {% for spot, spot_id in day.assigned_held %}
-        <div class="res-row">
-            <span class="res-spot">{{ floor_label(spot.floor) }}/{{ spot.number }}</span>
-            <span class="res-period">
-                <span class="badge badge-assigned">Přidělené — celý den</span>
-            </span>
-            {% if not day.is_past %}
-            <form method="post" action="/releases/" style="margin:0"
-                  onsubmit="return confirmCancel('Uvolnit místo {{ floor_label(spot.floor) }}/{{ spot.number }} do sdíleného poolu?', this)">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="spot_id" value="{{ spot_id }}">
-                <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
-                <input type="hidden" name="shift" value="FULL_DAY">
-                <input type="hidden" name="release_type" value="POOL">
-                <button type="submit" class="btn-release">Uvolnit do poolu</button>
-            </form>
-            {% endif %}
-        </div>
-        {% endfor %}
 
     </div>
 </div>
+
+{# Rezervační dialog pro tento den #}
+{% if not day.is_past and day.free_options %}
+<dialog id="dlg-{{ day.date.isoformat() }}">
+    <div class="dialog-header">
+        <h3>Rezervovat — {{ day.label }}</h3>
+        <button class="dialog-close" onclick="closeDialog('dlg-{{ day.date.isoformat() }}')">✕</button>
+    </div>
+    <form method="post" action="/reservations/">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
+        <div class="dialog-body">
+            <p style="font-size:.8rem;color:#6b7280;margin-bottom:.75rem">Vyberte místo a časový slot:</p>
+            {% for spot, shift in day.free_options %}
+            <label class="option-label">
+                <input type="radio" name="spot_shift"
+                       value="{{ spot.id }}|{{ shift.value }}"
+                       onchange="document.getElementById('sid-{{ day.date.isoformat() }}').value=this.value.split('|')[0]; document.getElementById('shf-{{ day.date.isoformat() }}').value=this.value.split('|')[1]"
+                       {% if loop.first %}checked{% endif %}>
+                <span>
+                    <div class="option-text">{{ shift_labels[shift] }}</div>
+                    <div class="option-spot">{{ floor_label(spot.floor) }} / {{ spot.number }}</div>
+                </span>
+            </label>
+            {% endfor %}
+            <input type="hidden" id="sid-{{ day.date.isoformat() }}" name="spot_id"
+                   value="{{ day.free_options[0][0].id }}">
+            <input type="hidden" id="shf-{{ day.date.isoformat() }}" name="shift"
+                   value="{{ day.free_options[0][1].value }}">
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn-dialog-cancel"
+                    onclick="closeDialog('dlg-{{ day.date.isoformat() }}')">Zrušit</button>
+            <button type="submit" class="btn-confirm">Zarezervovat</button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
+
 {% endfor %}
 {% endblock %}

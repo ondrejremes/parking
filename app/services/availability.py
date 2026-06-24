@@ -278,21 +278,23 @@ def get_month_summary(
             if (s.id, d) not in released and s.id not in reserved_spot_ids
         ]
 
-        # Free spots
-        free_spots: list = []
+        # Free options: (spot, shift) pairs available to book, grouped for dialog
+        free_options: list = []   # [(spot, shift), ...] sorted by shift then spot
+        free_spots: list = []     # unique spots (for count display)
         if d in full_avail:
-            seen: set = set()
-            for spot_id, shifts in full_avail[d].items():
-                spot = spot_map[spot_id]
-                for status in shifts.values():
-                    if status == "free" and spot_id not in seen:
-                        free_spots.append(spot)
-                        seen.add(spot_id)
-                        break
+            seen_spots: set = set()
+            for shift in Shift:
+                for spot_id, shifts in full_avail[d].items():
+                    if shifts.get(shift) == "free":
+                        spot = spot_map[spot_id]
+                        free_options.append((spot, shift))
+                        seen_spots.add(spot_id)
+            free_spots = [spot_map[sid] for sid in seen_spots]
 
         summary[d] = {
             "reservations": my_res,
             "assigned_held": held,
             "free_spots": free_spots,
+            "free_options": free_options,  # [(spot, shift), ...] for reservation dialog
         }
     return summary

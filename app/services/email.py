@@ -5,7 +5,7 @@ from app.models.enums import Shift
 _SHIFT_LABEL = {
     Shift.FULL_DAY: "celý den",
     Shift.DAY: "denní směna (8:00–18:00)",
-    Shift.NIGHT: "noční směna (18:00–09:00)",
+    Shift.NIGHT: "noční směna (18:00–08:00)",
 }
 
 

@@ -23,12 +23,12 @@ _CZECH_MONTHS_NOM  = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen'
 SHIFT_LABELS = {
     Shift.FULL_DAY: "Celý den",
     Shift.DAY:      "Denní směna (8:00–18:00)",
-    Shift.NIGHT:    "Noční směna (18:00–09:00)",
+    Shift.NIGHT:    "Noční směna (18:00–08:00)",
 }
 SHIFT_SHORT = {
     Shift.FULL_DAY: "Celý den",
     Shift.DAY:      "Denní (8–18)",
-    Shift.NIGHT:    "Noční (18–09)",
+    Shift.NIGHT:    "Noční (18–08)",
 }
 
 
@@ -147,9 +147,10 @@ async def calendar_week(
             "label": f"{_CZECH_DAYS_SHORT[d.weekday()]} {d.day}. {_CZECH_MONTHS_GEN[d.month - 1]}",
             "is_today": d == today,
             "is_past": d < today,
-            "reservations": day_data["reservations"],       # (spot, shift, res_id)
-            "assigned_held": day_data["assigned_held"],     # (spot, spot_id)
-            "free_spots": day_data["free_spots"],           # [spot, ...]
+            "reservations": day_data["reservations"],         # (spot, shift, res_id)
+            "assigned_held": day_data["assigned_held"],       # (spot, spot_id)
+            "free_spots": day_data["free_spots"],             # [spot, ...]
+            "free_options": day_data["free_options"],         # [(spot, shift), ...]
         })
 
     ctx = _base_ctx(request, user)
