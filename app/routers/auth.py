@@ -75,10 +75,15 @@ async def admin_login(
     validate_csrf(request, csrf_token)
 
     if verify_admin_password(username, password):
+        # Ensure local admin has a proper DB user record (needed for reservations FK)
+        admin_user = upsert_sso_user(db, azure_oid=None, email=username, display_name="Admin")
+        if not admin_user.is_admin:
+            admin_user.is_admin = True
+            db.commit()
         request.session["user"] = {
-            "id": "local-admin",
-            "email": username,
-            "display_name": "Admin",
+            "id": str(admin_user.id),
+            "email": admin_user.email,
+            "display_name": admin_user.display_name,
             "is_admin": True,
         }
         return RedirectResponse("/", status_code=303)

@@ -22,6 +22,7 @@ async def spots(request: Request, db: Session = Depends(get_db)):
         "spots": all_spots,
         "users": all_users,
         "csrf_token": generate_csrf_token(request),
+        "back_url": "/calendar",
     })
 
 
@@ -88,6 +89,7 @@ async def users(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "users": all_users,
         "csrf_token": generate_csrf_token(request),
+        "back_url": "/calendar",
     })
 
 

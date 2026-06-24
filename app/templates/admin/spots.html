@@ -6,8 +6,8 @@
 <form method="post" action="/admin/spots" style="background:#fff;padding:1rem;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:1.5rem;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div>
-        <label style="display:block;font-size:.8rem;margin-bottom:.2rem">Patro</label>
-        <input type="text" name="floor" required placeholder="1" style="padding:.4rem;border:1px solid #d1d5db;border-radius:4px;width:80px">
+        <label style="display:block;font-size:.8rem;margin-bottom:.2rem">Patro <span style="color:#9ca3af;font-weight:400">(−1 až −4 = PP, 1, 2… = nadzemní)</span></label>
+        <input type="text" name="floor" required placeholder="-1" style="padding:.4rem;border:1px solid #d1d5db;border-radius:4px;width:80px">
     </div>
     <div>
         <label style="display:block;font-size:.8rem;margin-bottom:.2rem">Číslo místa</label>

@@ -44,11 +44,17 @@ def verify_local_user(db: Session, username: str, password: str) -> models.User 
     return None
 
 
-def upsert_sso_user(db: Session, azure_oid: str, email: str, display_name: str) -> models.User:
-    user = db.query(models.User).filter_by(azure_oid=azure_oid).first()
+def upsert_sso_user(db: Session, azure_oid: str | None, email: str, display_name: str) -> models.User:
+    # For SSO users match by azure_oid; for local admin match by email
+    if azure_oid:
+        user = db.query(models.User).filter_by(azure_oid=azure_oid).first()
+    else:
+        user = db.query(models.User).filter_by(email=email).first()
+
     if user:
-        user.email = email
         user.display_name = display_name
+        if azure_oid:
+            user.email = email
     else:
         user = models.User(azure_oid=azure_oid, email=email, display_name=display_name)
         db.add(user)

@@ -80,6 +80,14 @@
             <a href="/auth/logout">Odhlásit</a>
         {% endif %}
     </nav>
+    {% if back_url is defined and back_url %}
+    <div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:.35rem 1.5rem">
+        <a href="{{ back_url }}" style="font-size:.8rem;color:#4B2D8F;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem">
+            ← Zpět
+        </a>
+    </div>
+    {% endif %}
+
     <main>
         {% block content %}{% endblock %}
     </main>

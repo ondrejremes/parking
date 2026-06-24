@@ -2,6 +2,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 from app import models
 from app.models.enums import Shift, SpotType, ReleaseType
+from typing import Any
 
 # Shifts that conflict with FULL_DAY
 _FULL_DAY_CONFLICTS = {Shift.DAY, Shift.NIGHT}
@@ -114,3 +115,36 @@ def _shift_status(
     if str(spot.assigned_user_id) == str(current_user_id):
         return "mine"  # their own spot, implicitly "held"
     return "blocked"
+
+
+def get_month_summary(
+    db: Session,
+    dates: list[date],
+    user_id: Any,
+    spots: list[models.Spot],
+) -> dict[date, dict]:
+    """
+    Returns per-day summary for the monthly calendar view:
+    {date: {'my_reservations': [(spot, shift), ...], 'free_slots': [(spot, shift), ...]}}
+    """
+    if not dates:
+        return {}
+
+    full_avail = get_week_availability(db, dates, user_id)
+    spot_map = {spot.id: spot for spot in spots}
+
+    summary: dict[date, dict] = {}
+    for d in dates:
+        my_res: list = []
+        free_spots: list = []   # unique spots with at least one free shift
+        seen: set = set()
+        for spot_id, shifts in full_avail[d].items():
+            spot = spot_map[spot_id]
+            for shift, status in shifts.items():
+                if status == "mine":
+                    my_res.append((spot, shift))
+                elif status == "free" and spot_id not in seen:
+                    free_spots.append(spot)
+                    seen.add(spot_id)
+        summary[d] = {"my_reservations": my_res, "free_spots": free_spots}
+    return summary

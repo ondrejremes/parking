@@ -1,38 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Kalendář — Parkování{% endblock %}
+{% block title %}Kalendář — Parking{% endblock %}
 {% block head %}
 <style>
-    .week-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
-    .week-nav h2 { font-size:1.1rem; }
-    .cal-table { width:100%; border-collapse:collapse; background:#fff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-    .cal-table th, .cal-table td { border:1px solid #e5e7eb; padding:.5rem .75rem; font-size:.8rem; vertical-align:top; }
-    .cal-table th { background:#f9fafb; text-align:center; }
-    .spot-label { font-weight:600; font-size:.8rem; white-space:nowrap; }
-    .floor-tag { font-size:.7rem; color:#6b7280; }
-    .slot { display:inline-block; padding:.2rem .5rem; border-radius:3px; font-size:.75rem; margin:.1rem 0; }
-    .slot-mine     { background:#dbeafe; color:#1e40af; }
-    .slot-free     { background:#d1fae5; color:#065f46; cursor:pointer; }
-    .slot-taken    { background:#fee2e2; color:#991b1b; }
-    .slot-blocked  { background:#f3f4f6; color:#9ca3af; }
-    .shift-label { font-size:.7rem; color:#6b7280; }
+    .week-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .week-nav h2 { font-size:1.05rem; font-weight:600; }
+
+    .cal-wrap { overflow-x:auto; }
+    .cal-table { width:100%; border-collapse:collapse; background:#fff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,.08); min-width:700px; }
+    .cal-table th, .cal-table td { border:1px solid #e5e7eb; padding:.45rem .6rem; font-size:.78rem; vertical-align:top; }
+    .cal-table th { background:#f9fafb; text-align:center; white-space:nowrap; }
+    .col-spot { width:140px; }
+
+    .spot-label { font-weight:600; font-size:.8rem; }
+    .spot-meta  { font-size:.7rem; color:#6b7280; margin-top:.1rem; }
+
+    .slot-btn, .slot-tag {
+        display:block; width:100%; text-align:left;
+        padding:.25rem .4rem; border-radius:3px;
+        font-size:.72rem; margin:.15rem 0; line-height:1.3;
+        border:none; cursor:default;
+    }
+    .slot-btn  { cursor:pointer; }
+    .slot-mine    { background:#dbeafe; color:#1e40af; }
+    .slot-free    { background:#d1fae5; color:#065f46; }
+    .slot-free:hover { background:#a7f3d0; }
+    .slot-taken   { background:#fee2e2; color:#991b1b; }
+    .slot-blocked { background:#f3f4f6; color:#9ca3af; }
+
+    .legend { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1rem; font-size:.75rem; }
+    .legend-item { display:flex; align-items:center; gap:.3rem; }
+    .legend-dot  { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
 </style>
 {% endblock %}
 {% block content %}
+
 <div class="week-nav">
     <a href="/calendar?week={{ prev_week }}" class="btn btn-secondary">← předchozí</a>
-    <h2>Týden od {{ week_dates[0].strftime('%d. %m. %Y') }}</h2>
+    <h2>Týden {{ week_start_label }}</h2>
     <a href="/calendar?week={{ next_week }}" class="btn btn-secondary">následující →</a>
+    <a href="/calendar" class="btn btn-secondary" style="margin-left:auto">Tento týden</a>
 </div>
 
+<div class="cal-wrap">
 <table class="cal-table">
     <thead>
         <tr>
-            <th>Místo</th>
+            <th class="col-spot">Místo</th>
             {% for d in week_dates %}
             <th>
-                {{ d.strftime('%a') }}<br>
-                <span style="font-weight:400">{{ d.strftime('%d.%m.') }}</span>
-                {% if d == today %}<br><span style="color:#1a56db;font-size:.7rem">dnes</span>{% endif %}
+                <div style="font-weight:700">{{ czech_days[d.weekday()] }}</div>
+                <div style="font-weight:400;color:#6b7280">{{ d.day }}.{{ d.month }}.</div>
+                {% if d == today %}<div style="color:#4B2D8F;font-size:.68rem;font-weight:600">dnes</div>{% endif %}
             </th>
             {% endfor %}
         </tr>
@@ -41,38 +59,34 @@
         {% for spot in spots %}
         <tr>
             <td>
-                <div class="spot-label">{{ spot.floor }} / {{ spot.number }}</div>
-                <div class="floor-tag">
+                <div class="spot-label">{{ floor_label(spot.floor) }} / {{ spot.number }}</div>
+                <div class="spot-meta">
                     {% if spot.spot_type.value == 'ASSIGNED' %}
-                        přidělené{% if spot.assigned_user %}· {{ spot.assigned_user.display_name }}{% endif %}
+                        přidělené{% if spot.assigned_user %} · {{ spot.assigned_user.display_name }}{% endif %}
                     {% else %}sdílené{% endif %}
                 </div>
             </td>
             {% for d in week_dates %}
+            {% set day_status = availability[d][spot.id] %}
             <td>
-                {% set day_status = availability[d][spot.id] %}
-                {% for shift in ['FULL_DAY', 'DAY', 'NIGHT'] %}
-                    {% set s = day_status[shift] if shift in day_status|string else None %}
-                    {% set shift_labels = {'FULL_DAY': 'Celý den', 'DAY': 'Ráno–odp.', 'NIGHT': '18–00'} %}
-                    {% for shift_enum, status in day_status.items() %}
-                        {% if shift_enum.value == shift %}
-                            {% if status == 'mine' %}
-                                <span class="slot slot-mine" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</span>
-                            {% elif status == 'free' and d >= today %}
-                                <form method="post" action="/reservations/" style="display:inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <input type="hidden" name="spot_id" value="{{ spot.id }}">
-                                    <input type="hidden" name="day" value="{{ d.isoformat() }}">
-                                    <input type="hidden" name="shift" value="{{ shift_enum.value }}">
-                                    <button type="submit" class="slot slot-free" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</button>
-                                </form>
-                            {% elif status == 'taken' %}
-                                <span class="slot slot-taken" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</span>
-                            {% elif status == 'blocked' %}
-                                <span class="slot slot-blocked" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</span>
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
+                {% for shift in shifts %}
+                {% set status = day_status[shift] %}
+                {% set label = shift_short[shift] %}
+                {% if status == 'mine' %}
+                    <span class="slot-tag slot-mine">{{ label }}</span>
+                {% elif status == 'free' and d >= today %}
+                    <form method="post" action="/reservations/" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                        <input type="hidden" name="day" value="{{ d.isoformat() }}">
+                        <input type="hidden" name="shift" value="{{ shift.value }}">
+                        <button type="submit" class="slot-btn slot-free" title="{{ shift_labels[shift] }}">{{ label }}</button>
+                    </form>
+                {% elif status == 'taken' %}
+                    <span class="slot-tag slot-taken">{{ label }}</span>
+                {% elif status == 'blocked' %}
+                    <span class="slot-tag slot-blocked">{{ label }}</span>
+                {% endif %}
                 {% endfor %}
             </td>
             {% endfor %}
@@ -80,11 +94,13 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 
-<p style="margin-top:1rem;font-size:.8rem;color:#6b7280">
-    <span class="slot slot-mine">moje</span>
-    <span class="slot slot-free">volné — klikni pro rezervaci</span>
-    <span class="slot slot-taken">obsazené</span>
-    <span class="slot slot-blocked">blokované</span>
-</p>
+<div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#dbeafe"></div> Moje rezervace</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d1fae5"></div> Volné — klikni pro rezervaci</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fee2e2"></div> Obsazené</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #e5e7eb"></div> Blokované (přidělené jiné osobě)</div>
+</div>
+
 {% endblock %}
