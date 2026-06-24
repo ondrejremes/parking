@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Přihlášení — Parkování{% endblock %}
+{% block content %}
+<div style="max-width:360px;margin:4rem auto;background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+    <h1 style="font-size:1.25rem;margin-bottom:1.5rem">Přihlášení</h1>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <a href="/auth/login" class="btn btn-primary" style="display:block;text-align:center;margin-bottom:1.5rem">
+        Přihlásit přes Microsoft 365
+    </a>
+
+    <hr style="margin-bottom:1.5rem;border:none;border-top:1px solid #e5e7eb">
+    <p style="font-size:.8rem;color:#6b7280;margin-bottom:1rem">Administrátor</p>
+
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div style="margin-bottom:1rem">
+            <label style="display:block;font-size:.875rem;margin-bottom:.25rem">Uživatelské jméno</label>
+            <input type="text" name="username" required
+                style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px">
+        </div>
+        <div style="margin-bottom:1.25rem">
+            <label style="display:block;font-size:.875rem;margin-bottom:.25rem">Heslo</label>
+            <input type="password" name="password" required
+                style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px">
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width:100%">Přihlásit jako admin</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models.enums import SpotType
+from app.services.auth import require_admin, generate_csrf_token, validate_csrf
+from app import models
+
+router = APIRouter(prefix="/admin")
+templates = Jinja2Templates(directory="app/templates")
+
+
+@router.get("/spots", response_class=HTMLResponse)
+async def spots(request: Request, db: Session = Depends(get_db)):
+    require_admin(request)
+    all_spots = db.query(models.Spot).order_by(models.Spot.floor, models.Spot.number).all()
+    all_users = db.query(models.User).order_by(models.User.display_name).all()
+    return templates.TemplateResponse("admin/spots.html", {
+        "request": request,
+        "spots": all_spots,
+        "users": all_users,
+        "csrf_token": generate_csrf_token(request),
+    })
+
+
+@router.post("/spots")
+async def create_spot(
+    request: Request,
+    floor: str = Form(...),
+    number: str = Form(...),
+    spot_type: SpotType = Form(...),
+    assigned_user_id: str | None = Form(None),
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    spot = models.Spot(
+        floor=floor,
+        number=number,
+        spot_type=spot_type,
+        assigned_user_id=assigned_user_id or None,
+    )
+    db.add(spot)
+    db.commit()
+    return RedirectResponse("/admin/spots", status_code=303)
+
+
+@router.post("/spots/{spot_id}/assign")
+async def assign_spot(
+    spot_id: str,
+    request: Request,
+    user_id: str | None = Form(None),
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    spot = db.query(models.Spot).filter_by(id=spot_id).first()
+    spot.assigned_user_id = user_id or None
+    spot.spot_type = SpotType.ASSIGNED if user_id else SpotType.SHARED
+    db.commit()
+    return RedirectResponse("/admin/spots", status_code=303)
+
+
+@router.post("/spots/{spot_id}/deactivate")
+async def deactivate_spot(
+    spot_id: str,
+    request: Request,
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    spot = db.query(models.Spot).filter_by(id=spot_id).first()
+    spot.active = False
+    db.commit()
+    return RedirectResponse("/admin/spots", status_code=303)
+
+
+@router.get("/users", response_class=HTMLResponse)
+async def users(request: Request, db: Session = Depends(get_db)):
+    require_admin(request)
+    all_users = db.query(models.User).order_by(models.User.display_name).all()
+    return templates.TemplateResponse("admin/users.html", {
+        "request": request,
+        "users": all_users,
+        "csrf_token": generate_csrf_token(request),
+    })
+
+
+@router.post("/users/{user_id}/toggle-admin")
+async def toggle_admin(
+    user_id: str,
+    request: Request,
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    user = db.query(models.User).filter_by(id=user_id).first()
+    user.is_admin = not user.is_admin
+    db.commit()
+    return RedirectResponse("/admin/users", status_code=303)

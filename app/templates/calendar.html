@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Kalendář — Parkování{% endblock %}
+{% block head %}
+<style>
+    .week-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+    .week-nav h2 { font-size:1.1rem; }
+    .cal-table { width:100%; border-collapse:collapse; background:#fff; border-radius:6px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .cal-table th, .cal-table td { border:1px solid #e5e7eb; padding:.5rem .75rem; font-size:.8rem; vertical-align:top; }
+    .cal-table th { background:#f9fafb; text-align:center; }
+    .spot-label { font-weight:600; font-size:.8rem; white-space:nowrap; }
+    .floor-tag { font-size:.7rem; color:#6b7280; }
+    .slot { display:inline-block; padding:.2rem .5rem; border-radius:3px; font-size:.75rem; margin:.1rem 0; }
+    .slot-mine     { background:#dbeafe; color:#1e40af; }
+    .slot-free     { background:#d1fae5; color:#065f46; cursor:pointer; }
+    .slot-taken    { background:#fee2e2; color:#991b1b; }
+    .slot-blocked  { background:#f3f4f6; color:#9ca3af; }
+    .shift-label { font-size:.7rem; color:#6b7280; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="week-nav">
+    <a href="/calendar?week={{ prev_week }}" class="btn btn-secondary">← předchozí</a>
+    <h2>Týden od {{ week_dates[0].strftime('%d. %m. %Y') }}</h2>
+    <a href="/calendar?week={{ next_week }}" class="btn btn-secondary">následující →</a>
+</div>
+
+<table class="cal-table">
+    <thead>
+        <tr>
+            <th>Místo</th>
+            {% for d in week_dates %}
+            <th>
+                {{ d.strftime('%a') }}<br>
+                <span style="font-weight:400">{{ d.strftime('%d.%m.') }}</span>
+                {% if d == today %}<br><span style="color:#1a56db;font-size:.7rem">dnes</span>{% endif %}
+            </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for spot in spots %}
+        <tr>
+            <td>
+                <div class="spot-label">{{ spot.floor }} / {{ spot.number }}</div>
+                <div class="floor-tag">
+                    {% if spot.spot_type.value == 'ASSIGNED' %}
+                        přidělené{% if spot.assigned_user %}· {{ spot.assigned_user.display_name }}{% endif %}
+                    {% else %}sdílené{% endif %}
+                </div>
+            </td>
+            {% for d in week_dates %}
+            <td>
+                {% set day_status = availability[d][spot.id] %}
+                {% for shift in ['FULL_DAY', 'DAY', 'NIGHT'] %}
+                    {% set s = day_status[shift] if shift in day_status|string else None %}
+                    {% set shift_labels = {'FULL_DAY': 'Celý den', 'DAY': 'Ráno–odp.', 'NIGHT': '18–00'} %}
+                    {% for shift_enum, status in day_status.items() %}
+                        {% if shift_enum.value == shift %}
+                            {% if status == 'mine' %}
+                                <span class="slot slot-mine" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</span>
+                            {% elif status == 'free' and d >= today %}
+                                <form method="post" action="/reservations/" style="display:inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                                    <input type="hidden" name="day" value="{{ d.isoformat() }}">
+                                    <input type="hidden" name="shift" value="{{ shift_enum.value }}">
+                                    <button type="submit" class="slot slot-free" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</button>
+                                </form>
+                            {% elif status == 'taken' %}
+                                <span class="slot slot-taken" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</span>
+                            {% elif status == 'blocked' %}
+                                <span class="slot slot-blocked" title="{{ shift_labels[shift] }}">{{ shift_labels[shift] }}</span>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p style="margin-top:1rem;font-size:.8rem;color:#6b7280">
+    <span class="slot slot-mine">moje</span>
+    <span class="slot slot-free">volné — klikni pro rezervaci</span>
+    <span class="slot slot-taken">obsazené</span>
+    <span class="slot slot-blocked">blokované</span>
+</p>
+{% endblock %}

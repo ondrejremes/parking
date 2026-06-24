@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Správa uživatelů — Parkování{% endblock %}
+{% block content %}
+<h1 style="font-size:1.25rem;margin-bottom:1.5rem">Uživatelé</h1>
+
+<table>
+    <thead><tr><th>Jméno</th><th>E-mail</th><th>Zdroj</th><th>Admin</th><th>Akce</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+        <td>{{ u.display_name }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ 'SSO' if u.azure_oid else 'lokální' }}</td>
+        <td>{{ '✓' if u.is_admin else '' }}</td>
+        <td>
+            <form method="post" action="/admin/users/{{ u.id }}/toggle-admin">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-secondary">
+                    {{ 'Odebrat admin' if u.is_admin else 'Přidat admin' }}
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
