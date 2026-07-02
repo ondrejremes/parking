@@ -48,6 +48,17 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
         .all()
     )
 
+    # Guest parkings block the spot for the whole day
+    guest_parkings = (
+        db.query(models.GuestParking)
+        .filter(
+            models.GuestParking.date >= start,
+            models.GuestParking.date <= end,
+            models.GuestParking.cancelled_at.is_(None),
+        )
+        .all()
+    )
+
     # Index by (spot_id, date)
     res_index: dict[tuple, list[models.Reservation]] = {}
     for r in reservations:
@@ -57,15 +68,22 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
     for r in releases:
         release_index.setdefault((r.spot_id, r.date), []).append(r)
 
+    # Spots blocked by guest parkings: (spot_id, date) → taken
+    guest_blocked: set[tuple] = {(gp.spot_id, gp.date) for gp in guest_parkings}
+
     result = {}
     for d in week_dates:
         result[d] = {}
         for spot in spots:
-            result[d][spot.id] = _spot_day_status(
-                spot, d, current_user_id,
-                res_index.get((spot.id, d), []),
-                release_index.get((spot.id, d), []),
-            )
+            if (spot.id, d) in guest_blocked:
+                # Spot has an active guest parking — mark all shifts as taken
+                result[d][spot.id] = {shift: "taken" for shift in Shift}
+            else:
+                result[d][spot.id] = _spot_day_status(
+                    spot, d, current_user_id,
+                    res_index.get((spot.id, d), []),
+                    release_index.get((spot.id, d), []),
+                )
 
     return result
 
