@@ -267,6 +267,21 @@ def get_month_summary(
     full_avail = get_week_availability(db, future_dates, user_id) if future_dates else {}
 
     summary: dict[date, dict] = {}
+    # Guest parkings created by this user in range
+    guest_parkings_list = (
+        db.query(models.GuestParking)
+        .filter(
+            models.GuestParking.created_by_user_id == user_id,
+            models.GuestParking.date >= start,
+            models.GuestParking.date <= end,
+            models.GuestParking.cancelled_at.is_(None),
+        )
+        .all()
+    )
+    guest_by_date: dict[date, list] = {}
+    for gp in guest_parkings_list:
+        guest_by_date.setdefault(gp.date, []).append(gp)
+
     for d in dates:
         # Actual reservations: (spot, shift, res_id)
         my_res = res_by_date.get(d, [])
@@ -279,8 +294,8 @@ def get_month_summary(
         ]
 
         # Free options: (spot, shift) pairs available to book, grouped for dialog
-        free_options: list = []   # [(spot, shift), ...] sorted by shift then spot
-        free_spots: list = []     # unique spots (for count display)
+        free_options: list = []
+        free_spots: list = []
         if d in full_avail:
             seen_spots: set = set()
             for shift in Shift:
@@ -295,6 +310,7 @@ def get_month_summary(
             "reservations": my_res,
             "assigned_held": held,
             "free_spots": free_spots,
-            "free_options": free_options,  # [(spot, shift), ...] for reservation dialog
+            "free_options": free_options,
+            "guest_parkings": guest_by_date.get(d, []),
         }
     return summary

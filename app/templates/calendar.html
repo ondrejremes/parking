@@ -111,6 +111,19 @@
         padding: .45rem 1rem; border-radius: 5px; border: 1px solid #e5e7eb;
         background: #fff; color: #374151; font-size: .875rem; cursor: pointer;
     }
+    .btn-guest {
+        padding: .3rem .75rem; border-radius: 5px; border: none;
+        background: #fef3c7; color: #92400e; font-size: .78rem;
+        cursor: pointer; font-weight: 500;
+    }
+    .btn-guest:hover { background: #fde68a; }
+    .form-row { margin-bottom: .6rem; }
+    .form-label { display: block; font-size: .78rem; color: #374151; margin-bottom: .2rem; font-weight: 500; }
+    .form-input {
+        width: 100%; padding: .4rem .6rem; border: 1px solid #d1d5db;
+        border-radius: 5px; font-size: .85rem; font-family: inherit; box-sizing: border-box;
+    }
+    .form-input:focus { outline: none; border-color: #4B2D8F; }
 
     @media (max-width: 500px) {
         .week-nav h2 { font-size: .85rem; }
@@ -185,6 +198,34 @@
                 </button>
             </div>
             {% endif %}
+
+            {# Hosté #}
+            {% for gp in day.guest_parkings %}
+            <div class="res-row" style="border-top:1px dashed #e5e7eb;margin-top:.4rem;padding-top:.4rem">
+                <span class="res-spot" style="font-size:.75rem">🧑 {{ gp.guest_name }}</span>
+                <span class="res-period">
+                    <span class="badge" style="background:#fef3c7;color:#92400e;">
+                        Host {{ gp.time_from.strftime('%H:%M') }}–{{ gp.time_to.strftime('%H:%M') }}
+                    </span>
+                    {% if gp.guest_plate %}<span style="font-size:.7rem;color:#6b7280;margin-left:.3rem">{{ gp.guest_plate }}</span>{% endif %}
+                </span>
+                {% if not day.is_past %}
+                <form method="post" action="/guest-parkings/{{ gp.id }}/cancel" style="margin:0"
+                      data-confirm="Zrušit parkování hosta {{ gp.guest_name }}?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn-cancel">Zrušit</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {% if day.can_add_guest %}
+            <div style="margin-top:.4rem">
+                <button class="btn-guest" data-open-dialog="gdlg-{{ day.date.isoformat() }}">
+                    + Přidat hosta
+                </button>
+            </div>
+            {% endif %}
         {% endif %}
 
     </div>
@@ -223,6 +264,57 @@
             <button type="button" class="btn-dialog-cancel"
                     data-close-dialog="dlg-{{ day.date.isoformat() }}">Zrušit</button>
             <button type="submit" class="btn-confirm">Zarezervovat</button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
+
+{# Guest dialog #}
+{% if day.can_add_guest %}
+{% set held_spot = day.assigned_held[0][0] %}
+{% set held_spot_id = day.assigned_held[0][1] %}
+<dialog id="gdlg-{{ day.date.isoformat() }}">
+    <div class="dialog-header">
+        <h3>Přidat hosta — {{ day.label }}</h3>
+        <button class="dialog-close" data-close-dialog="gdlg-{{ day.date.isoformat() }}">✕</button>
+    </div>
+    <form method="post" action="/guest-parkings/">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="spot_id" value="{{ held_spot_id }}">
+        <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
+        <div class="dialog-body">
+            <p style="font-size:.78rem;color:#6b7280;margin-bottom:.75rem">
+                Místo: <strong>{{ floor_label(held_spot.floor) }}/{{ held_spot.number }}</strong>
+            </p>
+            <div class="form-row">
+                <label class="form-label">Čas od *</label>
+                <input type="time" name="time_from" required value="08:00" class="form-input">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Čas do *</label>
+                <input type="time" name="time_to" required value="17:00" class="form-input">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Jméno hosta *</label>
+                <input type="text" name="guest_name" required placeholder="Jan Novák" class="form-input">
+            </div>
+            <div class="form-row">
+                <label class="form-label">SPZ vozidla</label>
+                <input type="text" name="guest_plate" placeholder="1AB 2345" class="form-input" style="text-transform:uppercase">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Firma / poznámka</label>
+                <input type="text" name="note" placeholder="Acme s.r.o." class="form-input">
+            </div>
+            <div class="form-row">
+                <label class="form-label">Kontaktní osoba</label>
+                <input type="text" name="contact" placeholder="Kdo návštěvu řeší" class="form-input">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button type="button" class="btn-dialog-cancel"
+                    data-close-dialog="gdlg-{{ day.date.isoformat() }}">Zrušit</button>
+            <button type="submit" class="btn-confirm">Přidat hosta</button>
         </div>
     </form>
 </dialog>

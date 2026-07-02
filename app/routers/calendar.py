@@ -147,10 +147,12 @@ async def calendar_week(
             "label": f"{_CZECH_DAYS_SHORT[d.weekday()]} {d.day}. {_CZECH_MONTHS_GEN[d.month - 1]}",
             "is_today": d == today,
             "is_past": d < today,
-            "reservations": day_data["reservations"],         # (spot, shift, res_id)
-            "assigned_held": day_data["assigned_held"],       # (spot, spot_id)
-            "free_spots": day_data["free_spots"],             # [spot, ...]
-            "free_options": day_data["free_options"],         # [(spot, shift), ...]
+            "reservations": day_data["reservations"],
+            "assigned_held": day_data["assigned_held"],
+            "free_spots": day_data["free_spots"],
+            "free_options": day_data["free_options"],
+            "guest_parkings": day_data.get("guest_parkings", []),
+            "can_add_guest": bool(day_data["assigned_held"]) and d >= today,
         })
 
     ctx = _base_ctx(request, user)
