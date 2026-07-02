@@ -1,20 +1,29 @@
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.enums import SpotType
-from app.services.auth import require_admin, generate_csrf_token, validate_csrf
+from app.services.auth import require_admin, get_current_user, generate_csrf_token, validate_csrf
 from app import models
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="app/templates")
 
 
+def _require_spots_manager(request: Request):
+    user = get_current_user(request)
+    if not user.get("is_admin") and not user.get("can_manage_spots"):
+        raise HTTPException(status_code=403, detail="Nemáte oprávnění spravovat parkovací místa")
+    return user
+
+
+# ── Spots ──────────────────────────────────────────────────────────────────
+
 @router.get("/spots", response_class=HTMLResponse)
 async def spots(request: Request, db: Session = Depends(get_db)):
-    require_admin(request)
+    _require_spots_manager(request)
     all_spots = db.query(models.Spot).order_by(models.Spot.floor, models.Spot.number).all()
     all_users = db.query(models.User).order_by(models.User.display_name).all()
     return templates.TemplateResponse("admin/spots.html", {
@@ -37,7 +46,7 @@ async def create_spot(
     db: Session = Depends(get_db),
 ):
     validate_csrf(request, csrf_token)
-    require_admin(request)
+    _require_spots_manager(request)
     spot = models.Spot(
         floor=floor,
         number=number,
@@ -58,7 +67,7 @@ async def assign_spot(
     db: Session = Depends(get_db),
 ):
     validate_csrf(request, csrf_token)
-    require_admin(request)
+    _require_spots_manager(request)
     spot = db.query(models.Spot).filter_by(id=spot_id).first()
     spot.assigned_user_id = user_id or None
     spot.spot_type = SpotType.ASSIGNED if user_id else SpotType.SHARED
@@ -74,12 +83,14 @@ async def deactivate_spot(
     db: Session = Depends(get_db),
 ):
     validate_csrf(request, csrf_token)
-    require_admin(request)
+    _require_spots_manager(request)
     spot = db.query(models.Spot).filter_by(id=spot_id).first()
     spot.active = False
     db.commit()
     return RedirectResponse("/admin/spots", status_code=303)
 
+
+# ── Users ──────────────────────────────────────────────────────────────────
 
 @router.get("/users", response_class=HTMLResponse)
 async def users(request: Request, db: Session = Depends(get_db)):
@@ -104,5 +115,35 @@ async def toggle_admin(
     require_admin(request)
     user = db.query(models.User).filter_by(id=user_id).first()
     user.is_admin = not user.is_admin
+    db.commit()
+    return RedirectResponse("/admin/users", status_code=303)
+
+
+@router.post("/users/{user_id}/toggle-guests")
+async def toggle_guests(
+    user_id: str,
+    request: Request,
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    user = db.query(models.User).filter_by(id=user_id).first()
+    user.can_manage_guests = not user.can_manage_guests
+    db.commit()
+    return RedirectResponse("/admin/users", status_code=303)
+
+
+@router.post("/users/{user_id}/toggle-spots")
+async def toggle_spots(
+    user_id: str,
+    request: Request,
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    user = db.query(models.User).filter_by(id=user_id).first()
+    user.can_manage_spots = not user.can_manage_spots
     db.commit()
     return RedirectResponse("/admin/users", status_code=303)

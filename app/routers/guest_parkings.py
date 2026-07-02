@@ -39,6 +39,10 @@ async def create(
     user = get_current_user(request)
     back = f"/calendar?month={day.strftime('%Y-%m')}"
 
+    if not user.get("can_manage_guests") and not user.get("is_admin"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Nemáte oprávnění rezervovat pro hosty")
+
     spot = db.query(models.Spot).filter_by(id=spot_id, active=True).first()
     if not spot:
         return RedirectResponse(back, status_code=303)

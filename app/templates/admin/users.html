@@ -1,22 +1,52 @@
 {% extends "base.html" %}
-{% block title %}Správa uživatelů — Parkování{% endblock %}
+{% block title %}Správa uživatelů — Parking{% endblock %}
 {% block content %}
 <h1 style="font-size:1.25rem;margin-bottom:1.5rem">Uživatelé</h1>
 
 <table>
-    <thead><tr><th>Jméno</th><th>E-mail</th><th>Zdroj</th><th>Admin</th><th>Akce</th></tr></thead>
+    <thead>
+        <tr>
+            <th>Jméno</th>
+            <th>E-mail</th>
+            <th>Zdroj</th>
+            <th style="text-align:center">Admin</th>
+            <th style="text-align:center">Správa míst</th>
+            <th style="text-align:center">Rezervace hostů</th>
+        </tr>
+    </thead>
     <tbody>
     {% for u in users %}
     <tr>
         <td>{{ u.display_name }}</td>
-        <td>{{ u.email }}</td>
-        <td>{{ 'SSO' if u.azure_oid else 'lokální' }}</td>
-        <td>{{ '✓' if u.is_admin else '' }}</td>
-        <td>
+        <td style="font-size:.8rem;color:#6b7280">{{ u.email }}</td>
+        <td style="font-size:.8rem">{{ 'SSO' if u.azure_oid else 'lokální' }}</td>
+
+        <td style="text-align:center">
             <form method="post" action="/admin/users/{{ u.id }}/toggle-admin">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="btn btn-secondary">
-                    {{ 'Odebrat admin' if u.is_admin else 'Přidat admin' }}
+                <button type="submit" class="role-btn {% if u.is_admin %}role-on{% endif %}"
+                        title="{% if u.is_admin %}Odebrat admin roli{% else %}Přidat admin roli{% endif %}">
+                    {{ '✓' if u.is_admin else '–' }}
+                </button>
+            </form>
+        </td>
+
+        <td style="text-align:center">
+            <form method="post" action="/admin/users/{{ u.id }}/toggle-spots">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="role-btn {% if u.can_manage_spots %}role-on{% endif %}"
+                        title="{% if u.can_manage_spots %}Odebrat oprávnění ke správě míst{% else %}Přidat oprávnění ke správě míst{% endif %}">
+                    {{ '✓' if u.can_manage_spots else '–' }}
+                </button>
+            </form>
+        </td>
+
+        <td style="text-align:center">
+            <form method="post" action="/admin/users/{{ u.id }}/toggle-guests">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="role-btn {% if u.can_manage_guests %}role-on{% endif %}"
+                        title="{% if u.can_manage_guests %}Odebrat oprávnění pro hosty{% else %}Přidat oprávnění pro hosty{% endif %}">
+                    {{ '✓' if u.can_manage_guests else '–' }}
                 </button>
             </form>
         </td>
@@ -24,4 +54,15 @@
     {% endfor %}
     </tbody>
 </table>
+
+<style>
+    .role-btn {
+        width: 32px; height: 28px; border-radius: 5px; border: 1px solid #e5e7eb;
+        background: #f9fafb; color: #9ca3af; font-size: .85rem;
+        cursor: pointer; font-weight: 600;
+    }
+    .role-btn:hover { border-color: #4B2D8F; color: #4B2D8F; }
+    .role-btn.role-on { background: #4B2D8F; color: #fff; border-color: #4B2D8F; }
+    .role-btn.role-on:hover { background: #3d2478; }
+</style>
 {% endblock %}
