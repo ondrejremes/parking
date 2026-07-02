@@ -231,11 +231,14 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                 </div>
                 {% endfor %}
 
-                {# Volná místa — tlačítko otevírá dialog #}
+                {# Volná místa — tlačítko otevírá dialog, rozděleno na denní/noční #}
                 {% if not is_past and day_data.free_options %}
                 <button class="free-badge" data-open-dialog="dlg-{{ dk }}">
-                    {% if is_weekend %}Celý den volno
-                    {% else %}{{ day_data.free_spots | length }}× volno{% endif %} →
+                    {% if is_weekend %}Celý den volno →
+                    {% else %}
+                        <span title="Volná místa v denní směně (8–18)">☀ {{ day_data.get('free_day_count', 0) }}</span>
+                        <span title="Volná místa v noční směně (18–8)" style="margin-left:.35rem">☾ {{ day_data.get('free_night_count', 0) }}</span> →
+                    {% endif %}
                 </button>
                 {% endif %}
 
@@ -243,6 +246,10 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                 {% if not is_past and day_data.get('guest_free_spots', []) %}
                 <button class="btn-guest" data-open-dialog="gdlg-{{ dk }}">+ Host</button>
                 {% endif %}
+
+                <a href="/calendar/week?week={{ dk }}"
+                   style="display:block;font-size:.62rem;color:#4B2D8F;text-decoration:none;margin-top:.3rem;opacity:.7"
+                   title="Zobrazit detail týdne">≡ detail</a>
 
             </td>
             {% endif %}

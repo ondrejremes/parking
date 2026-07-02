@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Reporting využití — Parking{% endblock %}
+{% block head %}
+<style>
+    .rep-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .rep-nav h2 { font-size:1.1rem; font-weight:700; flex:1; }
+
+    .summary-card {
+        background:#fff; border-radius:8px; padding:1.25rem 1.5rem;
+        box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:1.5rem;
+        display:flex; gap:2rem; flex-wrap:wrap; align-items:center;
+    }
+    .summary-item { text-align:center; }
+    .summary-num  { font-size:2rem; font-weight:700; color:#4B2D8F; line-height:1; }
+    .summary-lbl  { font-size:.78rem; color:#6b7280; margin-top:.2rem; }
+
+    .util-bar-wrap { flex:1; min-width:200px; }
+    .util-bar-bg   { background:#f3f4f6; border-radius:4px; height:10px; overflow:hidden; }
+    .util-bar-fill { background:#4B2D8F; height:100%; border-radius:4px; transition:width .3s; }
+    .util-bar-fill.high   { background:#059669; }
+    .util-bar-fill.medium { background:#d97706; }
+    .util-bar-fill.low    { background:#6b7280; }
+
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px;
+            box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:hidden; }
+    th, td { padding:.6rem .9rem; text-align:left; border-bottom:1px solid #f0f0f0; font-size:.85rem; }
+    th { background:#f9fafb; font-weight:600; font-size:.78rem; color:#374151; }
+    tr:last-child td { border-bottom:none; }
+    td.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .badge-assigned { background:#ede9fe; color:#5b21b6; font-size:.72rem;
+                      padding:.1rem .4rem; border-radius:10px; }
+    .badge-shared   { background:#f0fdf4; color:#15803d; font-size:.72rem;
+                      padding:.1rem .4rem; border-radius:10px; }
+    .pct { font-weight:700; }
+    .pct-high   { color:#059669; }
+    .pct-medium { color:#d97706; }
+    .pct-low    { color:#6b7280; }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="rep-nav">
+    <a href="/reporting/?month={{ prev_month }}" class="btn btn-secondary">← předchozí</a>
+    <h2>Využití parkoviště — {{ month_label }}</h2>
+    <a href="/reporting/?month={{ next_month }}" class="btn btn-secondary">následující →</a>
+</div>
+
+<div class="summary-card">
+    <div class="summary-item">
+        <div class="summary-num">{{ spot_stats | length }}</div>
+        <div class="summary-lbl">aktivních míst</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-num">{{ total_working }}</div>
+        <div class="summary-lbl">pracovních dní</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-num {% if overall_utilization >= 60 %}pct-high{% elif overall_utilization >= 30 %}pct-medium{% else %}pct-low{% endif %}">
+            {{ overall_utilization }}%
+        </div>
+        <div class="summary-lbl">celkové vytížení</div>
+    </div>
+    <div class="util-bar-wrap">
+        <div style="font-size:.75rem;color:#6b7280;margin-bottom:.3rem">Celkové vytížení parkoviště</div>
+        <div class="util-bar-bg">
+            <div class="util-bar-fill {% if overall_utilization >= 60 %}high{% elif overall_utilization >= 30 %}medium{% else %}low{% endif %}"
+                 style="width:{{ overall_utilization }}%"></div>
+        </div>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Místo</th>
+            <th>Typ</th>
+            <th>Přiděleno</th>
+            <th class="num">Rezerv. slotů</th>
+            <th class="num">Obsazeno dní</th>
+            <th class="num">z {{ total_working }} pracovních</th>
+            <th class="num">Hosté</th>
+            <th>Denní obsazenost</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for s in spot_stats %}
+    {% if s.day_occupancy >= 60 %}{% set pct_class = "pct-high" %}
+    {% elif s.day_occupancy >= 30 %}{% set pct_class = "pct-medium" %}
+    {% else %}{% set pct_class = "pct-low" %}{% endif %}
+    <tr>
+        <td><strong>{{ s.label }}</strong></td>
+        <td>
+            {% if s.is_assigned %}
+            <span class="badge-assigned">přidělené</span>
+            {% else %}
+            <span class="badge-shared">sdílené</span>
+            {% endif %}
+        </td>
+        <td style="font-size:.8rem;color:#6b7280">{{ s.assigned_to or '—' }}</td>
+        <td class="num">{{ s.reserved_slots }}</td>
+        <td class="num">{{ s.booked_days }}</td>
+        <td class="num">
+            <span class="pct {{ pct_class }}">{{ s.day_occupancy }}%</span>
+        </td>
+        <td class="num">{{ s.guest_count }}</td>
+        <td style="min-width:140px">
+            <div class="util-bar-bg" title="{{ s.day_occupancy }}%">
+                <div class="util-bar-fill {% if s.day_occupancy >= 60 %}high{% elif s.day_occupancy >= 30 %}medium{% else %}low{% endif %}"
+                     style="width:{{ s.day_occupancy }}%"></div>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<p style="margin-top:1rem;font-size:.75rem;color:#9ca3af">
+    Slot = jedna rezervace (celý den / denní / noční směna). Denní obsazenost = % pracovních dní, kdy bylo místo alespoň jednou rezervováno.
+</p>
+{% endblock %}

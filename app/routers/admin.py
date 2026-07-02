@@ -134,6 +134,21 @@ async def toggle_guests(
     return RedirectResponse("/admin/users", status_code=303)
 
 
+@router.post("/users/{user_id}/toggle-reports")
+async def toggle_reports(
+    user_id: str,
+    request: Request,
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+    user = db.query(models.User).filter_by(id=user_id).first()
+    user.can_view_reports = not user.can_view_reports
+    db.commit()
+    return RedirectResponse("/admin/users", status_code=303)
+
+
 @router.post("/users/{user_id}/toggle-spots")
 async def toggle_spots(
     user_id: str,

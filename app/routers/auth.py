@@ -56,6 +56,7 @@ async def callback(request: Request, db: Session = Depends(get_db)):
         "is_admin": user.is_admin,
         "can_manage_guests": user.can_manage_guests,
         "can_manage_spots": user.can_manage_spots,
+        "can_view_reports": user.can_view_reports,
     }
     return RedirectResponse("/")
 
@@ -89,6 +90,7 @@ async def admin_login(
             "is_admin": True,
             "can_manage_guests": admin_user.can_manage_guests,
             "can_manage_spots": admin_user.can_manage_spots,
+            "can_view_reports": admin_user.can_view_reports,
         }
         return RedirectResponse("/", status_code=303)
 
@@ -101,6 +103,7 @@ async def admin_login(
             "is_admin": local_user.is_admin,
             "can_manage_guests": local_user.can_manage_guests,
             "can_manage_spots": local_user.can_manage_spots,
+            "can_view_reports": local_user.can_view_reports,
         }
         return RedirectResponse("/", status_code=303)
 

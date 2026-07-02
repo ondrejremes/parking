@@ -84,6 +84,9 @@
             {% if user.is_admin %}
                 <a href="/admin/users">Uživatelé</a>
             {% endif %}
+            {% if user.is_admin or user.can_view_reports %}
+                <a href="/reporting/">Reporting</a>
+            {% endif %}
             <span class="nav-spacer"></span>
             <span class="nav-user">{{ user.display_name }}</span>
             <a href="/auth/logout">Odhlásit</a>

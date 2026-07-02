@@ -12,6 +12,7 @@
             <th style="text-align:center">Admin</th>
             <th style="text-align:center">Správa míst</th>
             <th style="text-align:center">Rezervace hostů</th>
+            <th style="text-align:center">Reporting</th>
         </tr>
     </thead>
     <tbody>
@@ -47,6 +48,16 @@
                 <button type="submit" class="role-btn {% if u.can_manage_guests %}role-on{% endif %}"
                         title="{% if u.can_manage_guests %}Odebrat oprávnění pro hosty{% else %}Přidat oprávnění pro hosty{% endif %}">
                     {{ '✓' if u.can_manage_guests else '–' }}
+                </button>
+            </form>
+        </td>
+
+        <td style="text-align:center">
+            <form method="post" action="/admin/users/{{ u.id }}/toggle-reports">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="role-btn {% if u.can_view_reports %}role-on{% endif %}"
+                        title="{% if u.can_view_reports %}Odebrat přístup k reportingu{% else %}Přidat přístup k reportingu{% endif %}">
+                    {{ '✓' if u.can_view_reports else '–' }}
                 </button>
             </form>
         </td>

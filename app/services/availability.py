@@ -416,6 +416,8 @@ def get_month_summary(
         # Personal free options (respects user restrictions) — for own reservation dialog
         free_options: list = []
         free_spots: list = []
+        free_day_count = 0    # spots free for DAY shift (or FULL_DAY)
+        free_night_count = 0  # spots free for NIGHT shift
         if d in full_avail:
             seen_spots: set = set()
             for shift in Shift:
@@ -425,6 +427,14 @@ def get_month_summary(
                         free_options.append((spot, shift))
                         seen_spots.add(spot_id)
             free_spots = [spot_map[sid] for sid in seen_spots]
+            # Per-shift counts (a spot free for FULL_DAY counts toward both day and night)
+            for spot_id, shifts in full_avail[d].items():
+                day_free = shifts.get(Shift.DAY) == "free" or shifts.get(Shift.FULL_DAY) == "free"
+                night_free = shifts.get(Shift.NIGHT) == "free" or shifts.get(Shift.FULL_DAY) == "free"
+                if day_free:
+                    free_day_count += 1
+                if night_free:
+                    free_night_count += 1
 
         # Guest free options (ignores user restrictions) — for guest parking dialog
         guest_free_spots: list = []
@@ -442,6 +452,8 @@ def get_month_summary(
             "assigned_held": held,
             "free_spots": free_spots,
             "free_options": free_options,
+            "free_day_count": free_day_count,
+            "free_night_count": free_night_count,
             "guest_free_spots": guest_free_spots,   # for guest dialog (no user restrictions)
             "guest_parkings": guest_by_date.get(d, []),
         }
