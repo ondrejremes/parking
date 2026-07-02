@@ -25,7 +25,7 @@ def _msal_app():
 @router.get("/login")
 async def login(request: Request):
     flow = _msal_app().initiate_auth_code_flow(
-        scopes=["openid", "email", "profile"],
+        scopes=["User.Read"],
         redirect_uri=AZURE_REDIRECT_URI,
     )
     request.session["auth_flow"] = flow
