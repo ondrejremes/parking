@@ -1,8 +1,23 @@
-from datetime import date
+from datetime import date, time
 from sqlalchemy.orm import Session
 from app import models
 from app.models.enums import Shift, SpotType, ReleaseType
 from typing import Any
+
+# Shift time ranges for guest-parking conflict detection
+_SHIFT_RANGES: dict[Shift, list[tuple[time, time]]] = {
+    Shift.FULL_DAY: [(time(0, 0), time(23, 59))],
+    Shift.DAY:      [(time(8, 0),  time(18, 0))],
+    Shift.NIGHT:    [(time(18, 0), time(23, 59)), (time(0, 0), time(8, 0))],
+}
+
+
+def _guest_blocks_shift(time_from: time, time_to: time, shift: Shift) -> bool:
+    """True if guest parking [time_from, time_to) overlaps with the shift's time range."""
+    for r_from, r_to in _SHIFT_RANGES.get(shift, []):
+        if time_from < r_to and time_to > r_from:
+            return True
+    return False
 
 # Shifts that conflict with FULL_DAY
 _FULL_DAY_CONFLICTS = {Shift.DAY, Shift.NIGHT}
@@ -48,7 +63,34 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
         .all()
     )
 
-    # Guest parkings block the spot for the whole day
+    # Determine if the current user has an assigned spot and which days it's unreleased
+    # If assigned spot is not released for a day, user cannot book other spots that day
+    user_assigned_spot = (
+        db.query(models.Spot)
+        .filter_by(active=True, spot_type=SpotType.ASSIGNED)
+        .filter(models.Spot.assigned_user_id == current_user_id)
+        .first()
+    )
+    # Build set of (date, shift) where user's assigned spot IS released to pool
+    user_released: set[tuple] = set()
+    if user_assigned_spot:
+        user_releases = (
+            db.query(models.Release)
+            .filter(
+                models.Release.spot_id == user_assigned_spot.id,
+                models.Release.date >= start,
+                models.Release.date <= end,
+                models.Release.release_type == ReleaseType.POOL,
+                models.Release.retracted_at.is_(None),
+            )
+            .all()
+        )
+        for rel in user_releases:
+            for shift in Shift:
+                if _shifts_conflict(rel.shift, shift):
+                    user_released.add((rel.date, shift))
+
+    # Guest parkings — only block shifts whose time range overlaps with the guest's time
     guest_parkings = (
         db.query(models.GuestParking)
         .filter(
@@ -68,22 +110,37 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
     for r in releases:
         release_index.setdefault((r.spot_id, r.date), []).append(r)
 
-    # Spots blocked by guest parkings: (spot_id, date) → taken
-    guest_blocked: set[tuple] = {(gp.spot_id, gp.date) for gp in guest_parkings}
+    # Index: (spot_id, date) → list of guest parkings
+    guest_index: dict[tuple, list] = {}
+    for gp in guest_parkings:
+        guest_index.setdefault((gp.spot_id, gp.date), []).append(gp)
 
     result = {}
     for d in week_dates:
         result[d] = {}
         for spot in spots:
-            if (spot.id, d) in guest_blocked:
-                # Spot has an active guest parking — mark all shifts as taken
-                result[d][spot.id] = {shift: "taken" for shift in Shift}
-            else:
-                result[d][spot.id] = _spot_day_status(
-                    spot, d, current_user_id,
-                    res_index.get((spot.id, d), []),
-                    release_index.get((spot.id, d), []),
-                )
+            day_status = _spot_day_status(
+                spot, d, current_user_id,
+                res_index.get((spot.id, d), []),
+                release_index.get((spot.id, d), []),
+            )
+
+            # Apply guest parking time-based blocking per shift
+            day_guests = guest_index.get((spot.id, d), [])
+            if day_guests:
+                for shift in Shift:
+                    if day_status[shift] == "free":
+                        if any(_guest_blocks_shift(gp.time_from, gp.time_to, shift)
+                               for gp in day_guests):
+                            day_status[shift] = "taken"
+
+            # If user has an unreleased assigned spot, mark free slots on OTHER spots as blocked
+            if user_assigned_spot and str(spot.id) != str(user_assigned_spot.id):
+                for shift in Shift:
+                    if day_status[shift] == "free" and (d, shift) not in user_released:
+                        day_status[shift] = "blocked"
+
+            result[d][spot.id] = day_status
 
     return result
 

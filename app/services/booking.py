@@ -102,8 +102,51 @@ def retract_release(db: Session, release_id, owner_id) -> models.Release:
     return release
 
 
+def _user_has_unreleased_assigned_spot(db: Session, user_id, day: date, shift: Shift) -> models.Spot | None:
+    """
+    Returns the assigned spot if the user has one that is NOT released for the
+    given day/shift — meaning they should not be able to book another spot.
+    """
+    assigned = (
+        db.query(models.Spot)
+        .filter_by(active=True, spot_type=SpotType.ASSIGNED)
+        .filter(models.Spot.assigned_user_id == user_id)
+        .first()
+    )
+    if not assigned:
+        return None
+
+    releases = (
+        db.query(models.Release)
+        .filter(
+            models.Release.spot_id == assigned.id,
+            models.Release.date == day,
+            models.Release.retracted_at.is_(None),
+        )
+        .all()
+    )
+    # Spot is considered released if there's a POOL release covering the requested shift
+    for rel in releases:
+        if rel.release_type == ReleaseType.POOL and _shifts_conflict(rel.shift, shift):
+            return None  # Released → user may book elsewhere
+
+    return assigned  # Not released → block
+
+
 def _assert_bookable(db: Session, spot: models.Spot, day: date, shift: Shift, user_id):
     from app.services.availability import _shift_status
+
+    # Block reservation if user has an unreleased assigned spot (they already have parking)
+    # Exception: if they're reserving their own assigned spot (shouldn't normally happen, but guard it)
+    blocking_spot = _user_has_unreleased_assigned_spot(db, user_id, day, shift)
+    if blocking_spot and str(blocking_spot.id) != str(spot.id):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Máte přidělené místo {blocking_spot.floor}/{blocking_spot.number}, "
+                f"které není uvolněno. Nejdříve ho uvolněte do sdíleného poolu."
+            ),
+        )
 
     existing_res = (
         db.query(models.Reservation)

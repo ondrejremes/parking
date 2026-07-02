@@ -47,13 +47,25 @@ async def create(
     if not spot:
         return RedirectResponse(back, status_code=303)
 
-    if not _spot_is_free_for_day(db, spot_id, day, user["id"]):
-        return RedirectResponse(back, status_code=303)
-
     t_from = time.fromisoformat(time_from)
     t_to = time.fromisoformat(time_to)
     if t_to <= t_from:
         return RedirectResponse(back, status_code=303)
+
+    # Check overlap with existing guest parkings on the same spot+day
+    existing = (
+        db.query(models.GuestParking)
+        .filter(
+            models.GuestParking.spot_id == spot_id,
+            models.GuestParking.date == day,
+            models.GuestParking.cancelled_at.is_(None),
+        )
+        .all()
+    )
+    for eg in existing:
+        if eg.time_from < t_to and eg.time_to > t_from:
+            # Overlapping guest parking already exists — redirect without creating
+            return RedirectResponse(back, status_code=303)
 
     gp = models.GuestParking(
         spot_id=spot_id,
