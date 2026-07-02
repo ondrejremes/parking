@@ -233,8 +233,8 @@
                 </button>
                 {% endif %}
 
-                {# Přidat hosta — jen pokud má přidělené místo #}
-                {% if not is_past and day_data.assigned_held %}
+                {# Rezervovat pro hosta — jen pokud jsou volná sdílená místa #}
+                {% if not is_past and day_data.free_spots %}
                 <button class="btn-guest" data-open-dialog="gdlg-{{ dk }}">+ Host</button>
                 {% endif %}
 
@@ -288,24 +288,26 @@
 </dialog>
 {% endif %}
 
-{# Guest dialog pro tento den (pokud má přidělené místo) #}
-{% set day_data_g = summary.get(d, {'assigned_held': []}) %}
-{% if not is_past and day_data_g.assigned_held %}
-{% set g_spot = day_data_g.assigned_held[0][0] %}
-{% set g_spot_id = day_data_g.assigned_held[0][1] %}
+{# Guest dialog — výběr z volných sdílených míst #}
+{% set day_data_g = summary.get(d, {'free_spots': []}) %}
+{% if not is_past and day_data_g.free_spots %}
 <dialog id="gdlg-{{ dk }}" style="max-width:380px;width:90%">
     <div class="dlg-header">
-        <h3>Přidat hosta — {{ czech_days[d.weekday()] }} {{ d.day }}. {{ d.month }}.</h3>
+        <h3>Rezervovat pro hosta — {{ czech_days[d.weekday()] }} {{ d.day }}. {{ d.month }}.</h3>
         <button class="dlg-close" data-close-dialog="gdlg-{{ dk }}">✕</button>
     </div>
     <form method="post" action="/guest-parkings/">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="hidden" name="spot_id" value="{{ g_spot_id }}">
         <input type="hidden" name="day" value="{{ dk }}">
         <div class="dlg-body">
-            <p style="font-size:.78rem;color:#6b7280;margin-bottom:.65rem">
-                Místo: <strong>{{ floor_label(g_spot.floor) }}/{{ g_spot.number }}</strong>
-            </p>
+            <div class="form-row">
+                <label class="form-label">Parkovací místo *</label>
+                <select name="spot_id" required class="form-input">
+                    {% for spot in day_data_g.free_spots %}
+                    <option value="{{ spot.id }}">{{ floor_label(spot.floor) }} / {{ spot.number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.55rem">
                 <div>
                     <label class="form-label">Čas od *</label>
@@ -335,7 +337,7 @@
         </div>
         <div class="dlg-foot">
             <button type="button" class="btn-dlg-cancel" data-close-dialog="gdlg-{{ dk }}">Zrušit</button>
-            <button type="submit" class="btn-confirm">Přidat hosta</button>
+            <button type="submit" class="btn-confirm">Rezervovat pro hosta</button>
         </div>
     </form>
 </dialog>

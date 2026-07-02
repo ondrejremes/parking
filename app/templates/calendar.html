@@ -222,7 +222,7 @@
             {% if day.can_add_guest %}
             <div style="margin-top:.4rem">
                 <button class="btn-guest" data-open-dialog="gdlg-{{ day.date.isoformat() }}">
-                    + Přidat hosta
+                    + Rezervovat pro hosta ({{ day.free_spots | length }}× volné)
                 </button>
             </div>
             {% endif %}
@@ -269,30 +269,34 @@
 </dialog>
 {% endif %}
 
-{# Guest dialog #}
+{# Guest dialog — výběr z volných sdílených míst #}
 {% if day.can_add_guest %}
-{% set held_spot = day.assigned_held[0][0] %}
-{% set held_spot_id = day.assigned_held[0][1] %}
 <dialog id="gdlg-{{ day.date.isoformat() }}">
     <div class="dialog-header">
-        <h3>Přidat hosta — {{ day.label }}</h3>
+        <h3>Rezervovat pro hosta — {{ day.label }}</h3>
         <button class="dialog-close" data-close-dialog="gdlg-{{ day.date.isoformat() }}">✕</button>
     </div>
     <form method="post" action="/guest-parkings/">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="hidden" name="spot_id" value="{{ held_spot_id }}">
         <input type="hidden" name="day" value="{{ day.date.isoformat() }}">
         <div class="dialog-body">
-            <p style="font-size:.78rem;color:#6b7280;margin-bottom:.75rem">
-                Místo: <strong>{{ floor_label(held_spot.floor) }}/{{ held_spot.number }}</strong>
-            </p>
             <div class="form-row">
-                <label class="form-label">Čas od *</label>
-                <input type="time" name="time_from" required value="08:00" class="form-input">
+                <label class="form-label">Parkovací místo *</label>
+                <select name="spot_id" required class="form-input">
+                    {% for spot in day.free_spots %}
+                    <option value="{{ spot.id }}">{{ floor_label(spot.floor) }} / {{ spot.number }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="form-row">
-                <label class="form-label">Čas do *</label>
-                <input type="time" name="time_to" required value="17:00" class="form-input">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                <div class="form-row">
+                    <label class="form-label">Čas od *</label>
+                    <input type="time" name="time_from" required value="08:00" class="form-input">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Čas do *</label>
+                    <input type="time" name="time_to" required value="17:00" class="form-input">
+                </div>
             </div>
             <div class="form-row">
                 <label class="form-label">Jméno hosta *</label>
@@ -300,7 +304,7 @@
             </div>
             <div class="form-row">
                 <label class="form-label">SPZ vozidla</label>
-                <input type="text" name="guest_plate" placeholder="1AB 2345" class="form-input" style="text-transform:uppercase">
+                <input type="text" name="guest_plate" placeholder="1AB 2345" class="form-input">
             </div>
             <div class="form-row">
                 <label class="form-label">Firma / poznámka</label>
@@ -314,7 +318,7 @@
         <div class="dialog-footer">
             <button type="button" class="btn-dialog-cancel"
                     data-close-dialog="gdlg-{{ day.date.isoformat() }}">Zrušit</button>
-            <button type="submit" class="btn-confirm">Přidat hosta</button>
+            <button type="submit" class="btn-confirm">Rezervovat</button>
         </div>
     </form>
 </dialog>

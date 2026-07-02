@@ -1,14 +1,24 @@
 from datetime import date, datetime, time, timezone
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.enums import SpotType
 from app.services.auth import get_current_user, validate_csrf
+from app.services.availability import get_week_availability
 from app import models
 
 router = APIRouter(prefix="/guest-parkings")
+
+
+def _spot_is_free_for_day(db: Session, spot_id, day: date, user_id: str) -> bool:
+    """Check that the spot has at least one free shift available on the given day."""
+    spots = db.query(models.Spot).filter_by(id=spot_id, active=True).all()
+    if not spots:
+        return False
+    avail = get_week_availability(db, [day], user_id)
+    shifts = avail.get(day, {}).get(spots[0].id, {})
+    return any(status == "free" for status in shifts.values())
 
 
 @router.post("/")
@@ -27,19 +37,26 @@ async def create(
 ):
     validate_csrf(request, csrf_token)
     user = get_current_user(request)
+    back = f"/calendar?month={day.strftime('%Y-%m')}"
 
     spot = db.query(models.Spot).filter_by(id=spot_id, active=True).first()
-    if not spot or spot.spot_type != SpotType.ASSIGNED:
-        return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
-    if str(spot.assigned_user_id) != str(user["id"]):
-        return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
+    if not spot:
+        return RedirectResponse(back, status_code=303)
+
+    if not _spot_is_free_for_day(db, spot_id, day, user["id"]):
+        return RedirectResponse(back, status_code=303)
+
+    t_from = time.fromisoformat(time_from)
+    t_to = time.fromisoformat(time_to)
+    if t_to <= t_from:
+        return RedirectResponse(back, status_code=303)
 
     gp = models.GuestParking(
         spot_id=spot_id,
         created_by_user_id=user["id"],
         date=day,
-        time_from=time.fromisoformat(time_from),
-        time_to=time.fromisoformat(time_to),
+        time_from=t_from,
+        time_to=t_to,
         guest_name=guest_name.strip(),
         guest_plate=guest_plate.strip() or None,
         note=note.strip() or None,
@@ -47,7 +64,7 @@ async def create(
     )
     db.add(gp)
     db.commit()
-    return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
+    return RedirectResponse(back, status_code=303)
 
 
 @router.post("/{gp_id}/cancel")
@@ -61,8 +78,9 @@ async def cancel(
     user = get_current_user(request)
 
     gp = db.query(models.GuestParking).filter_by(id=gp_id).first()
-    if gp and str(gp.created_by_user_id) == str(user["id"]) and not gp.cancelled_at:
-        gp.cancelled_at = datetime.now(timezone.utc)
-        db.commit()
+    if not gp or str(gp.created_by_user_id) != str(user["id"]) or gp.cancelled_at:
+        return RedirectResponse("/calendar", status_code=303)
 
+    gp.cancelled_at = datetime.now(timezone.utc)
+    db.commit()
     return RedirectResponse(f"/calendar?month={gp.date.strftime('%Y-%m')}", status_code=303)
