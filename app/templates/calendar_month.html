@@ -240,7 +240,7 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                 {% endif %}
 
                 {# Rezervovat pro hosta — jen pokud jsou volná sdílená místa #}
-                {% if not is_past and day_data.free_spots %}
+                {% if not is_past and day_data.get('guest_free_spots', []) %}
                 <button class="btn-guest" data-open-dialog="gdlg-{{ dk }}">+ Host</button>
                 {% endif %}
 
@@ -295,8 +295,8 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
 {% endif %}
 
 {# Guest dialog — výběr z volných sdílených míst #}
-{% set day_data_g = summary.get(d, {'free_spots': []}) %}
-{% if not is_past and day_data_g.free_spots %}
+{% set day_data_g = summary.get(d, {'guest_free_spots': []}) %}
+{% if not is_past and day_data_g.get('guest_free_spots', []) %}
 <dialog id="gdlg-{{ dk }}" style="max-width:380px;width:90%">
     <div class="dlg-header">
         <h3>Rezervovat pro hosta — {{ czech_days[d.weekday()] }} {{ d.day }}. {{ d.month }}.</h3>
@@ -309,7 +309,7 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
             <div class="form-row">
                 <label class="form-label">Parkovací místo *</label>
                 <select name="spot_id" required class="form-input">
-                    {% for spot in day_data_g.free_spots %}
+                    {% for spot in day_data_g.get('guest_free_spots', []) %}
                     <option value="{{ spot.id }}">{{ floor_label(spot.floor) }} / {{ spot.number }}</option>
                     {% endfor %}
                 </select>

@@ -106,7 +106,13 @@ def _user_has_unreleased_assigned_spot(db: Session, user_id, day: date, shift: S
     """
     Returns the assigned spot if the user has one that is NOT released for the
     given day/shift — meaning they should not be able to book another spot.
+    Only applies to DAY and FULL_DAY shifts: assigned spots cover the working
+    day (8-18), so NIGHT shift is not restricted.
     """
+    # Assigned spot only covers DAY shift hours — NIGHT is unrestricted
+    if shift == Shift.NIGHT:
+        return None
+
     assigned = (
         db.query(models.Spot)
         .filter_by(active=True, spot_type=SpotType.ASSIGNED)

@@ -229,7 +229,7 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
             {% if day.can_add_guest %}
             <div style="margin-top:.4rem">
                 <button class="btn-guest" data-open-dialog="gdlg-{{ day.date.isoformat() }}">
-                    + Rezervovat pro hosta ({{ day.free_spots | length }}× volné)
+                    + Rezervovat pro hosta ({{ day.guest_free_spots | length }}× volné)
                 </button>
             </div>
             {% endif %}
@@ -290,7 +290,7 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
             <div class="form-row">
                 <label class="form-label">Parkovací místo *</label>
                 <select name="spot_id" required class="form-input">
-                    {% for spot in day.free_spots %}
+                    {% for spot in day.guest_free_spots %}
                     <option value="{{ spot.id }}">{{ floor_label(spot.floor) }} / {{ spot.number }}</option>
                     {% endfor %}
                 </select>

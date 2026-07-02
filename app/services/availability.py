@@ -31,7 +31,12 @@ def _shifts_conflict(a: Shift, b: Shift) -> bool:
     return False
 
 
-def get_week_availability(db: Session, week_dates: list[date], current_user_id) -> dict:
+def get_week_availability(
+    db: Session,
+    week_dates: list[date],
+    current_user_id,
+    ignore_user_restrictions: bool = False,
+) -> dict:
     """
     Returns a nested dict: {date: {spot_id: {shift: status}}}
     status: "mine" | "taken" | "free" | "blocked"
@@ -39,6 +44,11 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
       - taken: reserved by someone else
       - free: bookable by current user
       - blocked: assigned to someone else, not released
+
+    ignore_user_restrictions=True skips per-user blocking rules
+    (unreleased assigned spot, existing pool reservation). Used when
+    computing availability for guest parkings, which are independent
+    of the employee's own parking status.
     """
     spots = db.query(models.Spot).filter_by(active=True).all()
     start, end = week_dates[0], week_dates[-1]
@@ -63,48 +73,49 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
         .all()
     )
 
-    # User's existing reservations (to block duplicate bookings on other spots)
-    user_reservations_all = (
-        db.query(models.Reservation)
-        .filter(
-            models.Reservation.user_id == current_user_id,
-            models.Reservation.date >= start,
-            models.Reservation.date <= end,
-            models.Reservation.cancelled_at.is_(None),
-        )
-        .all()
-    )
-    # Index: date → set of shifts already booked by user (on any spot)
+    # User-specific restrictions (skipped when computing availability for guest parking)
     user_booked: dict[date, set] = {}
-    for r in user_reservations_all:
-        user_booked.setdefault(r.date, set()).add(r.shift)
-
-    # Determine if the current user has an assigned spot and which days it's unreleased
-    # If assigned spot is not released for a day, user cannot book other spots that day
-    user_assigned_spot = (
-        db.query(models.Spot)
-        .filter_by(active=True, spot_type=SpotType.ASSIGNED)
-        .filter(models.Spot.assigned_user_id == current_user_id)
-        .first()
-    )
-    # Build set of (date, shift) where user's assigned spot IS released to pool
+    user_assigned_spot = None
     user_released: set[tuple] = set()
-    if user_assigned_spot:
-        user_releases = (
-            db.query(models.Release)
+
+    if not ignore_user_restrictions:
+        # Existing reservations → block duplicate bookings on other spots
+        user_reservations_all = (
+            db.query(models.Reservation)
             .filter(
-                models.Release.spot_id == user_assigned_spot.id,
-                models.Release.date >= start,
-                models.Release.date <= end,
-                models.Release.release_type == ReleaseType.POOL,
-                models.Release.retracted_at.is_(None),
+                models.Reservation.user_id == current_user_id,
+                models.Reservation.date >= start,
+                models.Reservation.date <= end,
+                models.Reservation.cancelled_at.is_(None),
             )
             .all()
         )
-        for rel in user_releases:
-            for shift in Shift:
-                if _shifts_conflict(rel.shift, shift):
-                    user_released.add((rel.date, shift))
+        for r in user_reservations_all:
+            user_booked.setdefault(r.date, set()).add(r.shift)
+
+        # Unreleased assigned spot → block other spots
+        user_assigned_spot = (
+            db.query(models.Spot)
+            .filter_by(active=True, spot_type=SpotType.ASSIGNED)
+            .filter(models.Spot.assigned_user_id == current_user_id)
+            .first()
+        )
+        if user_assigned_spot:
+            user_releases = (
+                db.query(models.Release)
+                .filter(
+                    models.Release.spot_id == user_assigned_spot.id,
+                    models.Release.date >= start,
+                    models.Release.date <= end,
+                    models.Release.release_type == ReleaseType.POOL,
+                    models.Release.retracted_at.is_(None),
+                )
+                .all()
+            )
+            for rel in user_releases:
+                for shift in Shift:
+                    if _shifts_conflict(rel.shift, shift):
+                        user_released.add((rel.date, shift))
 
     # Guest parkings — only block shifts whose time range overlaps with the guest's time
     guest_parkings = (
@@ -150,9 +161,10 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
                                for gp in day_guests):
                             day_status[shift] = "taken"
 
-            # If user has an unreleased assigned spot, mark free slots on OTHER spots as blocked
+            # If user has an unreleased assigned spot, mark DAY and FULL_DAY on OTHER spots
+            # as blocked (assigned spot covers the day shift 8-18 only)
             if user_assigned_spot and str(spot.id) != str(user_assigned_spot.id):
-                for shift in Shift:
+                for shift in (Shift.FULL_DAY, Shift.DAY):
                     if day_status[shift] == "free" and (d, shift) not in user_released:
                         day_status[shift] = "blocked"
 
@@ -364,9 +376,15 @@ def get_month_summary(
                 else:
                     released.add((spot.id, d))
 
-    # Free spots per day (from full availability — only for future dates, performance)
+    # Free spots per day — two availability views:
+    # - full_avail: with user restrictions (for personal reservation dialog)
+    # - guest_avail: without user restrictions (for guest parking dialog)
     future_dates = [d for d in dates if d >= date.today()]
     full_avail = get_week_availability(db, future_dates, user_id) if future_dates else {}
+    guest_avail = (
+        get_week_availability(db, future_dates, user_id, ignore_user_restrictions=True)
+        if future_dates else {}
+    )
 
     summary: dict[date, dict] = {}
     # Guest parkings created by this user in range
@@ -395,7 +413,7 @@ def get_month_summary(
             if (s.id, d) not in released and s.id not in reserved_spot_ids
         ]
 
-        # Free options: (spot, shift) pairs available to book, grouped for dialog
+        # Personal free options (respects user restrictions) — for own reservation dialog
         free_options: list = []
         free_spots: list = []
         if d in full_avail:
@@ -408,11 +426,23 @@ def get_month_summary(
                         seen_spots.add(spot_id)
             free_spots = [spot_map[sid] for sid in seen_spots]
 
+        # Guest free options (ignores user restrictions) — for guest parking dialog
+        guest_free_spots: list = []
+        if d in guest_avail:
+            seen: set = set()
+            for spot_id, shifts in guest_avail[d].items():
+                for status in shifts.values():
+                    if status == "free" and spot_id not in seen:
+                        guest_free_spots.append(spot_map[spot_id])
+                        seen.add(spot_id)
+                        break
+
         summary[d] = {
             "reservations": my_res,
             "assigned_held": held,
             "free_spots": free_spots,
             "free_options": free_options,
+            "guest_free_spots": guest_free_spots,   # for guest dialog (no user restrictions)
             "guest_parkings": guest_by_date.get(d, []),
         }
     return summary
