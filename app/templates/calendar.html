@@ -202,10 +202,17 @@
             {# Hosté #}
             {% for gp in day.guest_parkings %}
             <div class="res-row" style="border-top:1px dashed #e5e7eb;margin-top:.4rem;padding-top:.4rem">
-                <span class="res-spot" style="font-size:.75rem">🧑 {{ gp.guest_name }}</span>
-                <span class="res-period">
-                    <span class="badge" style="background:#fef3c7;color:#92400e;">
+                {% set gp_tooltip %}Host: {{ gp.guest_name }}{% if gp.note %}
+Firma: {{ gp.note }}{% endif %}{% if gp.guest_plate %}
+SPZ: {{ gp.guest_plate }}{% endif %}{% if gp.contact %}
+Kontakt: {{ gp.contact }}{% endif %}
+Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
+Čas: {{ gp.time_from.strftime('%H:%M') }}–{{ gp.time_to.strftime('%H:%M') }}{% endset %}
+                <span class="res-spot" style="font-size:.75rem" title="{{ gp_tooltip }}">🧑 {{ gp.guest_name }}{% if gp.note %} <span style="font-weight:400;color:#92400e">({{ gp.note }})</span>{% endif %}</span>
+                <span class="res-period" title="{{ gp_tooltip }}">
+                    <span class="badge" style="background:#fef3c7;color:#92400e;cursor:help;">
                         Host {{ gp.time_from.strftime('%H:%M') }}–{{ gp.time_to.strftime('%H:%M') }}
+                        · {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                     </span>
                     {% if gp.guest_plate %}<span style="font-size:.7rem;color:#6b7280;margin-left:.3rem">{{ gp.guest_plate }}</span>{% endif %}
                 </span>

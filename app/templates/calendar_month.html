@@ -212,8 +212,14 @@
                 {# Hosté na přiděleném místě #}
                 {% for gp in day_data.get('guest_parkings', []) %}
                 <div class="res-block">
-                    <span class="guest-tag" title="{{ gp.guest_name }}{% if gp.guest_plate %} · {{ gp.guest_plate }}{% endif %}">
-                        🧑 {{ gp.guest_name }} {{ gp.time_from.strftime('%H:%M') }}–{{ gp.time_to.strftime('%H:%M') }}
+                    {% set gp_tooltip %}Host: {{ gp.guest_name }}{% if gp.note %}
+Firma: {{ gp.note }}{% endif %}{% if gp.guest_plate %}
+SPZ: {{ gp.guest_plate }}{% endif %}{% if gp.contact %}
+Kontakt: {{ gp.contact }}{% endif %}
+Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
+Čas: {{ gp.time_from.strftime('%H:%M') }}–{{ gp.time_to.strftime('%H:%M') }}{% endset %}
+                    <span class="guest-tag" title="{{ gp_tooltip }}" style="cursor:help">
+                        🧑 {{ gp.guest_name }}{% if gp.note %} ({{ gp.note }}){% endif %} · {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }} · {{ gp.time_from.strftime('%H:%M') }}–{{ gp.time_to.strftime('%H:%M') }}
                     </span>
                     {% if not is_past %}
                     <form method="post" action="/guest-parkings/{{ gp.id }}/cancel" style="margin:0"
