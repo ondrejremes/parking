@@ -136,8 +136,7 @@ def _user_has_unreleased_assigned_spot(db: Session, user_id, day: date, shift: S
 def _assert_bookable(db: Session, spot: models.Spot, day: date, shift: Shift, user_id):
     from app.services.availability import _shift_status
 
-    # Block reservation if user has an unreleased assigned spot (they already have parking)
-    # Exception: if they're reserving their own assigned spot (shouldn't normally happen, but guard it)
+    # Block if user has unreleased assigned spot
     blocking_spot = _user_has_unreleased_assigned_spot(db, user_id, day, shift)
     if blocking_spot and str(blocking_spot.id) != str(spot.id):
         raise HTTPException(
@@ -147,6 +146,23 @@ def _assert_bookable(db: Session, spot: models.Spot, day: date, shift: Shift, us
                 f"které není uvolněno. Nejdříve ho uvolněte do sdíleného poolu."
             ),
         )
+
+    # Block if user already has an active reservation on a different spot for the same shift
+    conflicting_res = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.user_id == user_id,
+            models.Reservation.date == day,
+            models.Reservation.cancelled_at.is_(None),
+        )
+        .all()
+    )
+    for res in conflicting_res:
+        if str(res.spot_id) != str(spot.id) and _shifts_conflict(res.shift, shift):
+            raise HTTPException(
+                status_code=409,
+                detail="Již máte aktivní rezervaci na jiném místě pro toto časové období.",
+            )
 
     existing_res = (
         db.query(models.Reservation)

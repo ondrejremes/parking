@@ -63,6 +63,22 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
         .all()
     )
 
+    # User's existing reservations (to block duplicate bookings on other spots)
+    user_reservations_all = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.user_id == current_user_id,
+            models.Reservation.date >= start,
+            models.Reservation.date <= end,
+            models.Reservation.cancelled_at.is_(None),
+        )
+        .all()
+    )
+    # Index: date → set of shifts already booked by user (on any spot)
+    user_booked: dict[date, set] = {}
+    for r in user_reservations_all:
+        user_booked.setdefault(r.date, set()).add(r.shift)
+
     # Determine if the current user has an assigned spot and which days it's unreleased
     # If assigned spot is not released for a day, user cannot book other spots that day
     user_assigned_spot = (
@@ -139,6 +155,17 @@ def get_week_availability(db: Session, week_dates: list[date], current_user_id) 
                 for shift in Shift:
                     if day_status[shift] == "free" and (d, shift) not in user_released:
                         day_status[shift] = "blocked"
+
+            # If user already has a reservation on another spot for this day,
+            # mark conflicting shifts as blocked
+            booked_shifts = user_booked.get(d, set())
+            if booked_shifts:
+                for shift in Shift:
+                    if day_status[shift] == "free":
+                        for booked in booked_shifts:
+                            if _shifts_conflict(booked, shift):
+                                day_status[shift] = "blocked"
+                                break
 
             result[d][spot.id] = day_status
 
