@@ -12,6 +12,7 @@ RESOURCE_GROUP="Parking"
 REGION="germanywestcentral"
 APP_NAME="parking"
 ACR_NAME="parkingcr"
+CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-parking.alintrust.cz}"
 
 # Credentials from environment variables (NEVER hardcode!)
 AZURE_CLIENT_ID="${AZURE_CLIENT_ID:?Environment variable AZURE_CLIENT_ID is required}"
@@ -53,6 +54,7 @@ az deployment group create \
   --template-file infra/main.bicep \
   --parameters \
     containerImage="$ACR_NAME.azurecr.io/$APP_NAME:latest" \
+    customDomain="$CUSTOM_DOMAIN" \
     azureTenantId="$TENANT_ID" \
     azureClientId="$AZURE_CLIENT_ID" \
     azureClientSecret="$AZURE_CLIENT_SECRET" \

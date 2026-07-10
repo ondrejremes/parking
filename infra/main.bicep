@@ -9,7 +9,8 @@ param appName string = 'parking'
 @description('Container image to deploy, e.g. acrname.azurecr.io/parking:latest')
 param containerImage string
 
-// Custom domain is configured manually in Azure Portal
+@description('Custom domain for Front Door (e.g. parking.alintrust.cz)')
+param customDomain string = ''
 
 param azureTenantId string
 param emailFrom string = 'parking@alintrust.cz'
@@ -92,6 +93,7 @@ module frontdoor 'modules/frontdoor.bicep' = {
   params: {
     appName: appName
     originHostname: containerapp.outputs.fqdn
+    customDomain: customDomain
   }
 }
 
