@@ -1,7 +1,15 @@
 import os
+import subprocess
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Get version from git commit or use default
+try:
+    GIT_COMMIT = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=os.path.dirname(os.path.dirname(__file__))).decode().strip()
+    APP_VERSION = f"v1.0.0+{GIT_COMMIT}"
+except:
+    APP_VERSION = "v1.0.0"
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://parking:parking@localhost/parking")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "change-me")

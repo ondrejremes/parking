@@ -2,6 +2,7 @@ import os
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from app.config import APP_VERSION
 
 _CSP = (
     "default-src 'self'; "
@@ -18,6 +19,8 @@ _FRONT_DOOR_ID = os.getenv("AZURE_FRONT_DOOR_ID", "")
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        request.state.app_version = APP_VERSION
+
         if _FRONT_DOOR_ID and request.headers.get("X-Azure-FDID") != _FRONT_DOOR_ID:
             return Response("Forbidden", status_code=403)
 

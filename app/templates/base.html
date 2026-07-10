@@ -93,6 +93,7 @@
             {% endif %}
             <span class="nav-spacer"></span>
             <span class="nav-user">{{ user.display_name }}</span>
+            <span style="font-size:.7rem;color:rgba(255,255,255,.5);margin:0 .5rem">{{ request.state.app_version }}</span>
             <a href="/auth/logout">Odhlásit</a>
         {% endif %}
     </nav>
