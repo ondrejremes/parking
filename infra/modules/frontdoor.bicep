@@ -123,35 +123,12 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' = {
   dependsOn: [origin]
 }
 
-// ── Custom Domain with Managed Certificate ──────────────────────────────────
-
-resource customDomainResource 'Microsoft.Cdn/profiles/customDomains@2023-05-01' = if (hasCustomDomain) {
-  parent: profile
-  name: customDomainResourceName
-  properties: {
-    hostName: customDomain
-    tlsSettings: {
-      certificateType: 'ManagedCertificate'
-      minimumTlsVersion: 'TLS12'
-    }
-  }
-}
-
-resource customDomainRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' = if (hasCustomDomain) {
-  parent: endpoint
-  name: '${routeName}-custom'
-  properties: {
-    originGroup: { id: originGroup.id }
-    supportedProtocols: ['Http', 'Https']
-    patternsToMatch: ['/*']
-    forwardingProtocol: 'HttpsOnly'
-    httpsRedirect: 'Enabled'
-    linkToDefaultDomain: 'Disabled'
-    enabledState: 'Enabled'
-    customDomains: [{ id: customDomainResource.id }]
-  }
-  dependsOn: [origin]
-}
+// ── Custom Domain Setup ────────────────────────────────────────────────────
+// Custom domains are created manually in Azure Portal to avoid conflicts.
+// Reference the existing custom domain in routes if needed:
+// 1. Create custom domain in Portal: parking.alintrust.cz
+// 2. Verify CNAME: CNAME parking-g2ceh5h2abgnhvfr.a03.azurefd.net
+// 3. Set up route with linkToDefaultDomain: Disabled + customDomains reference
 
 output endpointHostname string = endpoint.properties.hostName
 output customDomainFqdn string = hasCustomDomain ? customDomainResource.properties.hostName : ''
