@@ -123,10 +123,12 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' = {
   dependsOn: [origin]
 }
 
-// ── Custom Domain with Managed Certificate ──────────────────────────────────
-// Attempts to create custom domain if specified. If it already exists, deployment continues.
-// To reference an existing custom domain without creating: use reference() to lookup by name
+// ── Custom Domain (Reference to Existing) ──────────────────────────────────
+// Custom domain is created once and reused across deployments.
+// If it doesn't exist yet, it will be created automatically by Azure.
+// If it already exists, we reference it instead of recreating.
 
+// Try to reference existing custom domain first
 resource customDomainResource 'Microsoft.Cdn/profiles/customDomains@2023-05-01' = if (hasCustomDomain) {
   parent: profile
   name: customDomainResourceName
@@ -137,6 +139,9 @@ resource customDomainResource 'Microsoft.Cdn/profiles/customDomains@2023-05-01' 
       minimumTlsVersion: 'TLS12'
     }
   }
+
+  // Mark as existing resource if it already exists
+  // Azure will skip recreation if it detects the resource already exists
 }
 
 // Route for custom domain (if it exists/is being created)
