@@ -1,5 +1,6 @@
 param appName string
 param originHostname string
+param customDomain string = ''
 
 var profileName = '${appName}-afd'
 var endpointName = appName
@@ -7,6 +8,9 @@ var originGroupName = 'app-origin-group'
 var originName = 'container-app-origin'
 var routeName = 'default-route'
 var wafPolicyName = '${replace(appName, '-', '')}waf'
+var hasCustomDomain = !empty(customDomain)
+var customDomainResourceName = hasCustomDomain ? replace(customDomain, '.', '-') : ''
+var secretName = hasCustomDomain ? '${customDomainResourceName}-cert' : ''
 
 // ── WAF Policy ─────────────────────────────────────────────────────────────
 
@@ -119,5 +123,36 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' = {
   dependsOn: [origin]
 }
 
+// ── Custom Domain with Managed Certificate ──────────────────────────────────
+
+resource customDomainResource 'Microsoft.Cdn/profiles/customDomains@2023-05-01' = if (hasCustomDomain) {
+  parent: profile
+  name: customDomainResourceName
+  properties: {
+    hostName: customDomain
+    tlsSettings: {
+      certificateType: 'ManagedCertificate'
+      minimumTlsVersion: 'TLS12'
+    }
+  }
+}
+
+resource customDomainRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-01' = if (hasCustomDomain) {
+  parent: endpoint
+  name: '${routeName}-custom'
+  properties: {
+    originGroup: { id: originGroup.id }
+    supportedProtocols: ['Http', 'Https']
+    patternsToMatch: ['/*']
+    forwardingProtocol: 'HttpsOnly'
+    httpsRedirect: 'Enabled'
+    linkToDefaultDomain: false
+    enabledState: 'Enabled'
+    customDomains: [{ id: customDomainResource.id }]
+  }
+  dependsOn: [origin, customDomainResource]
+}
+
 output endpointHostname string = endpoint.properties.hostName
+output customDomainFqdn string = hasCustomDomain ? customDomainResource.properties.hostName : ''
 output frontDoorId string = profile.properties.frontDoorId
