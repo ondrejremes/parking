@@ -146,11 +146,11 @@ resource customDomainRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2023-05-0
     patternsToMatch: ['/*']
     forwardingProtocol: 'HttpsOnly'
     httpsRedirect: 'Enabled'
-    linkToDefaultDomain: false
+    linkToDefaultDomain: 'Disabled'
     enabledState: 'Enabled'
     customDomains: [{ id: customDomainResource.id }]
   }
-  dependsOn: [origin, customDomainResource]
+  dependsOn: [origin]
 }
 
 output endpointHostname string = endpoint.properties.hostName
