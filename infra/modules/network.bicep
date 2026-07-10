@@ -52,7 +52,7 @@ resource postgresDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@
   parent: postgresDnsZone
   name: '${vnetName}-postgres-link'
   location: 'global'
-  properties: { virtualNetwork: { id: vnet.id }; registrationEnabled: false }
+  properties: { virtualNetwork: { id: vnet.id }, registrationEnabled: false }
 }
 
 resource keyvaultDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
@@ -64,7 +64,7 @@ resource keyvaultDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@
   parent: keyvaultDnsZone
   name: '${vnetName}-kv-link'
   location: 'global'
-  properties: { virtualNetwork: { id: vnet.id }; registrationEnabled: false }
+  properties: { virtualNetwork: { id: vnet.id }, registrationEnabled: false }
 }
 
 // ── Outputs ────────────────────────────────────────────────────────────────

@@ -231,14 +231,10 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                 </div>
                 {% endfor %}
 
-                {# Volná místa — tlačítko otevírá dialog, rozděleno na denní/noční #}
+                {# Volná místa — tlačítko otevírá dialog #}
                 {% if not is_past and day_data.free_options %}
                 <button class="free-badge" data-open-dialog="dlg-{{ dk }}">
-                    {% if is_weekend %}Celý den volno →
-                    {% else %}
-                        <span title="Volná místa v denní směně (8–18)">☀ {{ day_data.get('free_day_count', 0) }}</span>
-                        <span title="Volná místa v noční směně (18–8)" style="margin-left:.35rem">☾ {{ day_data.get('free_night_count', 0) }}</span> →
-                    {% endif %}
+                    Volných slotů: Den: {{ day_data.get('free_day_count', 0) }}, Noc: {{ day_data.get('free_night_count', 0) }} →
                 </button>
                 {% endif %}
 

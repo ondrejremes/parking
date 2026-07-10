@@ -53,7 +53,7 @@ resource env 'Microsoft.App/managedEnvironments@2023-11-02-preview' = {
       internal: false
     }
     workloadProfiles: [
-      { name: 'Consumption'; workloadProfileType: 'Consumption' }
+      { name: 'Consumption', workloadProfileType: 'Consumption' }
     ]
   }
 }
@@ -70,7 +70,7 @@ resource app 'Microsoft.App/containerApps@2023-11-02-preview' = {
     userAssignedIdentities: { '${identity.id}': {} }
   }
   properties: {
-    managedEnvironmentId: env.id
+    environmentId: env.id
     workloadProfileName: 'Consumption'
     configuration: {
       ingress: {
@@ -86,13 +86,13 @@ resource app 'Microsoft.App/containerApps@2023-11-02-preview' = {
         }
       ]
       secrets: [
-        { name: 'db-url';              keyVaultUrl: '${kvRef}/db-url/';              identity: identity.id }
-        { name: 'session-secret';      keyVaultUrl: '${kvRef}/session-secret/';      identity: identity.id }
-        { name: 'azure-client-id';     keyVaultUrl: '${kvRef}/azure-client-id/';     identity: identity.id }
-        { name: 'azure-client-secret'; keyVaultUrl: '${kvRef}/azure-client-secret/'; identity: identity.id }
-        { name: 'admin-username';      keyVaultUrl: '${kvRef}/admin-username/';      identity: identity.id }
-        { name: 'admin-password-hash'; keyVaultUrl: '${kvRef}/admin-password-hash/'; identity: identity.id }
-        { name: 'acs-connection-str';  keyVaultUrl: '${kvRef}/acs-connection-string/'; identity: identity.id }
+        { name: 'db-url',              keyVaultUrl: '${kvRef}/db-url',              identity: identity.id }
+        { name: 'session-secret',      keyVaultUrl: '${kvRef}/session-secret',      identity: identity.id }
+        { name: 'azure-client-id',     keyVaultUrl: '${kvRef}/azure-client-id',     identity: identity.id }
+        { name: 'azure-client-secret', keyVaultUrl: '${kvRef}/azure-client-secret', identity: identity.id }
+        { name: 'admin-username',      keyVaultUrl: '${kvRef}/admin-username',      identity: identity.id }
+        { name: 'admin-password-hash', keyVaultUrl: '${kvRef}/admin-password-hash', identity: identity.id }
+        { name: 'acs-connection-str',  keyVaultUrl: '${kvRef}/acs-connection-string', identity: identity.id }
       ]
     }
     template: {
@@ -100,22 +100,22 @@ resource app 'Microsoft.App/containerApps@2023-11-02-preview' = {
         {
           name: appName
           image: containerImage
-          resources: { cpu: json('0.5'); memory: '1Gi' }
+          resources: { cpu: json('0.5'), memory: '1Gi' }
           env: [
-            { name: 'DATABASE_URL';              secretRef: 'db-url' }
-            { name: 'SESSION_SECRET';            secretRef: 'session-secret' }
-            { name: 'AZURE_CLIENT_ID';           secretRef: 'azure-client-id' }
-            { name: 'AZURE_CLIENT_SECRET';       secretRef: 'azure-client-secret' }
-            { name: 'ADMIN_USERNAME';            secretRef: 'admin-username' }
-            { name: 'ADMIN_PASSWORD_HASH';       secretRef: 'admin-password-hash' }
-            { name: 'ACS_CONNECTION_STRING';     secretRef: 'acs-connection-str' }
-            { name: 'AZURE_TENANT_ID';           value: azureTenantId }
-            { name: 'EMAIL_FROM';                value: emailFrom }
-            { name: 'RESERVATION_HORIZON_DAYS';  value: string(reservationHorizonDays) }
+            { name: 'DATABASE_URL',              secretRef: 'db-url' }
+            { name: 'SESSION_SECRET',            secretRef: 'session-secret' }
+            { name: 'AZURE_CLIENT_ID',           secretRef: 'azure-client-id' }
+            { name: 'AZURE_CLIENT_SECRET',       secretRef: 'azure-client-secret' }
+            { name: 'ADMIN_USERNAME',            secretRef: 'admin-username' }
+            { name: 'ADMIN_PASSWORD_HASH',       secretRef: 'admin-password-hash' }
+            { name: 'ACS_CONNECTION_STRING',     secretRef: 'acs-connection-str' }
+            { name: 'AZURE_TENANT_ID',           value: azureTenantId }
+            { name: 'EMAIL_FROM',                value: emailFrom }
+            { name: 'RESERVATION_HORIZON_DAYS',  value: string(reservationHorizonDays) }
           ]
         }
       ]
-      scale: { minReplicas: 1; maxReplicas: 2 }
+      scale: { minReplicas: 1, maxReplicas: 2 }
     }
   }
   dependsOn: [acrPullRole, kvSecretsUserRole]
@@ -131,18 +131,18 @@ resource reminderJob 'Microsoft.App/jobs@2023-11-02-preview' = {
     userAssignedIdentities: { '${identity.id}': {} }
   }
   properties: {
-    managedEnvironmentId: env.id
+    environmentId: env.id
     workloadProfileName: 'Consumption'
     configuration: {
       triggerType: 'Schedule'
       replicaTimeout: 300
-      scheduleTriggerConfig: { cronExpression: '0 7 * * *'; replicaCompletionCount: 1 }
+      scheduleTriggerConfig: { cronExpression: '0 7 * * *', replicaCompletionCount: 1 }
       registries: [
-        { server: acrLoginServer; identity: identity.id }
+        { server: acrLoginServer, identity: identity.id }
       ]
       secrets: [
-        { name: 'db-url';            keyVaultUrl: '${kvRef}/db-url/';            identity: identity.id }
-        { name: 'acs-connection-str'; keyVaultUrl: '${kvRef}/acs-connection-string/'; identity: identity.id }
+        { name: 'db-url',            keyVaultUrl: '${kvRef}/db-url',            identity: identity.id }
+        { name: 'acs-connection-str', keyVaultUrl: '${kvRef}/acs-connection-string', identity: identity.id }
       ]
     }
     template: {
@@ -151,10 +151,10 @@ resource reminderJob 'Microsoft.App/jobs@2023-11-02-preview' = {
           name: 'reminder'
           image: containerImage
           command: ['python', '-m', 'app.jobs.reminder']
-          resources: { cpu: json('0.25'); memory: '0.5Gi' }
+          resources: { cpu: json('0.25'), memory: '0.5Gi' }
           env: [
-            { name: 'DATABASE_URL';          secretRef: 'db-url' }
-            { name: 'ACS_CONNECTION_STRING'; secretRef: 'acs-connection-str' }
+            { name: 'DATABASE_URL',          secretRef: 'db-url' }
+            { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-str' }
           ]
         }
       ]

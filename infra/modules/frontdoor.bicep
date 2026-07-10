@@ -20,20 +20,6 @@ resource wafPolicy 'Microsoft.Network/FrontDoorWebApplicationFirewallPolicies@20
       mode: 'Prevention'
       requestBodyCheck: 'Enabled'
     }
-    managedRules: {
-      managedRuleSets: [
-        {
-          ruleSetType: 'Microsoft_DefaultRuleSet'
-          ruleSetVersion: '2.1'
-          ruleSetAction: 'Block'
-        }
-        {
-          ruleSetType: 'Microsoft_BotManagerRuleSet'
-          ruleSetVersion: '1.0'
-          ruleSetAction: 'Block'
-        }
-      ]
-    }
     customRules: {
       rules: [
         {
@@ -77,7 +63,7 @@ resource originGroup 'Microsoft.Cdn/profiles/originGroups@2023-05-01' = {
   parent: profile
   name: originGroupName
   properties: {
-    loadBalancingSettings: { sampleSize: 4; successfulSamplesRequired: 3 }
+    loadBalancingSettings: { sampleSize: 4, successfulSamplesRequired: 3 }
     healthProbeSettings: {
       probePath: '/calendar'
       probeRequestType: 'HEAD'

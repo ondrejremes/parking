@@ -1,10 +1,10 @@
 using '../main.bicep'
 
 param appName = 'parking'
-param location = 'westeurope'
+param location = 'germanywestcentral'
 
 // Set via CI/CD secrets — do not hardcode here
-param containerImage = 'parkingacr.azurecr.io/parking:latest'
+param containerImage = 'parkingcr.azurecr.io/parking:latest'
 param azureTenantId = '<your-tenant-id>'
 param emailFrom = 'parking@yourdomain.com'
 param reservationHorizonDays = 31

@@ -5,7 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import SESSION_SECRET, BASE_URL
 from app.middleware import SecurityHeadersMiddleware
-from app.routers import auth, calendar, reservations, releases, admin, guest_parkings, reporting
+from app.routers import auth, calendar, reservations, releases, admin, guest_parkings, reporting, occupancy
 
 app = FastAPI(title="Parking", docs_url=None, redoc_url=None)
 
@@ -25,6 +25,7 @@ app.include_router(reservations.router)
 app.include_router(releases.router)
 app.include_router(admin.router)
 app.include_router(guest_parkings.router)
+app.include_router(occupancy.router)
 app.include_router(reporting.router)
 
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Parking — Alintrust{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #1a1a1a; }
@@ -83,6 +84,9 @@
             {% endif %}
             {% if user.is_admin %}
                 <a href="/admin/users">Uživatelé</a>
+            {% endif %}
+            {% if user.is_admin or user.can_manage_spots or user.can_view_reports %}
+                <a href="/occupancy/">Obsazení</a>
             {% endif %}
             {% if user.is_admin or user.can_view_reports %}
                 <a href="/reporting/">Reporting</a>

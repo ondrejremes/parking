@@ -2,7 +2,7 @@ param location string
 param appName string
 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: '${replace(appName, '-', '')}acr'
+  name: '${replace(appName, '-', '')}cr'
   location: location
   sku: { name: 'Standard' }
   properties: {

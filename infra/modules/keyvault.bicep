@@ -5,19 +5,18 @@ param vnetId string
 param privateDnsZoneId string
 param secrets object  // { 'secret-name': 'secret-value' }
 
-var kvName = '${appName}-kv-${uniqueString(resourceGroup().id)}'
+var kvName = '${appName}kv${uniqueString(subscription().subscriptionId)}'
 
 resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: take(kvName, 24)
   location: location
   properties: {
-    sku: { family: 'A'; name: 'standard' }
+    sku: { family: 'A', name: 'standard' }
     tenantId: subscription().tenantId
     enableRbacAuthorization: true
-    enableSoftDelete: true
-    softDeleteRetentionInDays: 7
+    enableSoftDelete: false
     publicNetworkAccess: 'Disabled'
-    networkAcls: { defaultAction: 'Deny'; bypass: 'AzureServices' }
+    networkAcls: { defaultAction: 'Deny', bypass: 'AzureServices' }
   }
 }
 

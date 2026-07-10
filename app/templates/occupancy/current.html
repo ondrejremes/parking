@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Aktuální obsazení — Parking{% endblock %}
+{% block head %}
+<style>
+    .occupancy-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+    .occupancy-nav h2 { font-size:1.1rem; font-weight:700; flex:1; }
+
+    .spot-card {
+        background:#fff; border-radius:8px; padding:1rem 1.25rem;
+        box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:1rem;
+        border-left:4px solid #e5e7eb;
+    }
+    .spot-card.assigned { border-left-color:#4B2D8F; }
+    .spot-card.shared   { border-left-color:#10b981; }
+
+    .spot-header { display:flex; align-items:center; gap:1rem; margin-bottom:.75rem; flex-wrap:wrap; }
+    .spot-label  { font-weight:700; font-size:1rem; flex:1; }
+    .spot-type   { font-size:.75rem; padding:.15rem .4rem; border-radius:10px; }
+    .spot-type.assigned { background:#ede9fe; color:#5b21b6; }
+    .spot-type.shared   { background:#f0fdf4; color:#15803d; }
+
+    .occupancy-list { margin-top:.5rem; }
+    .occupancy-item { display:flex; flex-direction:column; gap:.3rem; font-size:.85rem; padding:.3rem 0; border-bottom:1px solid #f9fafb; }
+    .occupancy-item:last-child { border-bottom:none; }
+
+    .occupancy-row { display:flex; align-items:center; gap:.5rem; }
+    .occupancy-label { font-weight:600; color:#6b7280; width:70px; }
+    .occupancy-content { flex:1; }
+
+    .user-name { font-weight:600; color:#1a1a1a; }
+    .date-range { color:#6b7280; font-size:.8rem; }
+    .shift-badge { display:inline-block; padding:.1rem .35rem; border-radius:8px; font-size:.75rem; margin-right:.25rem; }
+    .shift-day { background:#bfdbfe; color:#1e40af; }
+    .shift-night { background:#fed7aa; color:#92400e; }
+    .shift-full { background:#ddd6fe; color:#5b21b6; }
+
+    .badge-res    { background:#dbeafe; color:#1e40af; padding:.15rem .4rem; border-radius:5px; font-size:.75rem; }
+    .badge-release { background:#fecaca; color:#7c2d12; padding:.15rem .4rem; border-radius:5px; font-size:.75rem; }
+    .badge-guest  { background:#c7d2fe; color:#3730a3; padding:.15rem .4rem; border-radius:5px; font-size:.75rem; }
+
+    .empty-msg { color:#9ca3af; font-style:italic; padding:.5rem 0; }
+
+    @media (max-width:700px) {
+        .spot-card { padding:.75rem 1rem; }
+        .spot-header { flex-direction:column; align-items:flex-start; gap:.5rem; }
+        .spot-label { font-size:.95rem; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="occupancy-nav">
+    <h2>Aktuální obsazení parkoviště</h2>
+</div>
+
+{% for item in occupancy %}
+<div class="spot-card {% if item.spot.spot_type.value == 'ASSIGNED' %}assigned{% else %}shared{% endif %}">
+    <div class="spot-header">
+        <span class="spot-label">{{ item.label }}</span>
+        <span class="spot-type {% if item.spot.spot_type.value == 'ASSIGNED' %}assigned{% else %}shared{% endif %}">
+            {% if item.spot.spot_type.value == 'ASSIGNED' %}Přidělené{% else %}Sdílené{% endif %}
+        </span>
+    </div>
+
+    <div class="occupancy-list">
+        {# Assigned spot owner info #}
+        {% if item.spot.spot_type.value == 'ASSIGNED' and item.spot.assigned_user %}
+        <div class="occupancy-item">
+            <div class="occupancy-row">
+                <span class="occupancy-label">Přiděleno:</span>
+                <span class="user-name">{{ item.spot.assigned_user.display_name }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Current/upcoming reservations #}
+        {% if item.reservations %}
+        <div class="occupancy-item">
+            <div class="occupancy-row">
+                <span class="occupancy-label">Rezervace:</span>
+                <span class="occupancy-content">
+                    {% for res in item.reservations[:3] %}
+                    <div style="margin-bottom:.2rem">
+                        <span class="user-name">{{ res.user.display_name }}</span>
+                        <span class="date-range">{{ res.date }}</span>
+                        <span class="shift-badge shift-{% if res.shift.value == 'FULL_DAY' %}full{% elif res.shift.value == 'DAY' %}day{% else %}night{% endif %}">
+                            {% if res.shift.value == 'FULL_DAY' %}Celý den
+                            {% elif res.shift.value == 'DAY' %}Den 8–18
+                            {% else %}Noc 18–8{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% if item.reservations|length > 3 %}
+                    <div style="color:#9ca3af;font-size:.75rem">+ {{ item.reservations|length - 3 }} více</div>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Active releases (to pool or transfer) #}
+        {% if item.releases %}
+        <div class="occupancy-item">
+            <div class="occupancy-row">
+                <span class="occupancy-label">Uvolnění:</span>
+                <span class="occupancy-content">
+                    {% for rel in item.releases[:3] %}
+                    <div style="margin-bottom:.2rem;font-size:.8rem">
+                        <span class="date-range">{{ rel.date }}</span>
+                        <span class="shift-badge shift-{% if rel.shift.value == 'FULL_DAY' %}full{% elif rel.shift.value == 'DAY' %}day{% else %}night{% endif %}">
+                            {% if rel.shift.value == 'FULL_DAY' %}Celý den
+                            {% elif rel.shift.value == 'DAY' %}Den 8–18
+                            {% else %}Noc 18–8{% endif %}
+                        </span>
+                        {% if rel.release_type.value == 'TRANSFER' %}
+                        (přenosu: {{ rel.transfer_to_user.display_name if rel.transfer_to_user else '?' }})
+                        {% else %}
+                        (do poolu)
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if item.releases|length > 3 %}
+                    <div style="color:#9ca3af;font-size:.75rem">+ {{ item.releases|length - 3 }} více</div>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Guest parkings #}
+        {% if item.guests %}
+        <div class="occupancy-item">
+            <div class="occupancy-row">
+                <span class="occupancy-label">Hosté:</span>
+                <span class="occupancy-content">
+                    {% for guest in item.guests[:3] %}
+                    <div style="margin-bottom:.2rem">
+                        <span class="user-name">{{ guest.guest_name }}</span>
+                        <span class="date-range">{{ guest.date }}</span>
+                        <span style="color:#6b7280;font-size:.75rem">
+                            {{ guest.time_from.strftime('%H:%M') }}–{{ guest.time_to.strftime('%H:%M') }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% if item.guests|length > 3 %}
+                    <div style="color:#9ca3af;font-size:.75rem">+ {{ item.guests|length - 3 }} více</div>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Empty state #}
+        {% if not item.reservations and not item.releases and not item.guests %}
+        <div class="empty-msg">Bez aktuálních rezervací nebo uvolnění</div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<p style="margin-top:1.5rem;font-size:.75rem;color:#9ca3af">
+    Zobrazeny rezervace, uvolnění a guestparking od {{ today }} dále. Přidělená místa jsou zobrazena s přiřazeným uživatelem.
+</p>
+
+{% endblock %}
