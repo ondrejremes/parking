@@ -75,6 +75,34 @@ async def assign_spot(
     return RedirectResponse("/admin/spots", status_code=303)
 
 
+@router.post("/spots/{spot_id}/edit")
+async def edit_spot(
+    spot_id: str,
+    request: Request,
+    floor: str = Form(...),
+    number: str = Form(...),
+    spot_type: SpotType = Form(...),
+    assigned_user_id: str | None = Form(None),
+    active: str = Form(None),
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    _require_spots_manager(request)
+    if not floor or not floor.replace("-", "").replace("P", "").isalnum():
+        raise HTTPException(status_code=400, detail="Neplatné patro")
+    if not number or not number.isalnum():
+        raise HTTPException(status_code=400, detail="Neplatné číslo místa")
+    spot = db.query(models.Spot).filter_by(id=spot_id).first()
+    spot.floor = floor
+    spot.number = number
+    spot.spot_type = spot_type
+    spot.assigned_user_id = assigned_user_id or None
+    spot.active = active == "on"
+    db.commit()
+    return RedirectResponse("/admin/spots", status_code=303)
+
+
 @router.post("/spots/{spot_id}/deactivate")
 async def deactivate_spot(
     spot_id: str,

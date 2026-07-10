@@ -42,18 +42,9 @@
         <td>{{ 'Přidělené' if spot.spot_type.value == 'ASSIGNED' else 'Sdílené' }}</td>
         <td>{{ spot.assigned_user.display_name if spot.assigned_user else '—' }}</td>
         <td style="display:flex;gap:.5rem;flex-wrap:wrap">
-            <form method="post" action="/admin/spots/{{ spot.id }}/assign">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <select name="user_id" style="padding:.3rem;border:1px solid #d1d5db;border-radius:4px;font-size:.8rem">
-                    <option value="">— sdílené —</option>
-                    {% for u in users %}
-                    <option value="{{ u.id }}" {% if spot.assigned_user_id == u.id %}selected{% endif %}>{{ u.display_name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-secondary">Přidělit</button>
-            </form>
+            <button type="button" class="btn btn-secondary edit-btn" data-spot-id="{{ spot.id }}" data-floor="{{ spot.floor }}" data-number="{{ spot.number }}" data-type="{{ spot.spot_type.value }}" data-assigned="{{ spot.assigned_user_id or '' }}" data-active="{{ '1' if spot.active else '0' }}">Editovat</button>
             {% if spot.active %}
-            <form method="post" action="/admin/spots/{{ spot.id }}/deactivate" onsubmit="return confirm('Deaktivovat místo?')">
+            <form method="post" action="/admin/spots/{{ spot.id }}/deactivate" onsubmit="return confirm('Deaktivovat místo?')" style="display:inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit" class="btn btn-danger">Deaktivovat</button>
             </form>
@@ -63,4 +54,47 @@
     {% endfor %}
     </tbody>
 </table>
+
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:8px;padding:2rem;max-width:400px;width:90%;box-shadow:0 20px 25px rgba(0,0,0,.15)">
+        <h2 style="margin-top:0;margin-bottom:1.5rem">Editovat parkovací místo</h2>
+        <form method="post" id="editForm" style="display:flex;flex-direction:column;gap:1rem">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div>
+                <label style="display:block;font-size:.9rem;margin-bottom:.4rem;font-weight:500">Patro</label>
+                <input type="text" id="editFloor" name="floor" required style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+            </div>
+            <div>
+                <label style="display:block;font-size:.9rem;margin-bottom:.4rem;font-weight:500">Číslo místa</label>
+                <input type="text" id="editNumber" name="number" required style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+            </div>
+            <div>
+                <label style="display:block;font-size:.9rem;margin-bottom:.4rem;font-weight:500">Typ</label>
+                <select id="editType" name="spot_type" style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+                    <option value="SHARED">Sdílené</option>
+                    <option value="ASSIGNED">Přidělené</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block;font-size:.9rem;margin-bottom:.4rem;font-weight:500">Přidělit uživateli</label>
+                <select id="editAssigned" name="assigned_user_id" style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:4px;box-sizing:border-box">
+                    <option value="">— sdílené —</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+                <input type="checkbox" id="editActive" name="active" value="on" style="width:18px;height:18px;cursor:pointer">
+                <label for="editActive" style="margin:0;cursor:pointer;font-weight:500">Aktivní</label>
+            </div>
+            <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:.5rem">
+                <button type="button" class="btn close-btn" style="background:#e5e7eb;color:#374151">Zrušit</button>
+                <button type="submit" class="btn btn-primary">Uložit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/admin-spots-modal.js"></script>
 {% endblock %}
