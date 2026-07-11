@@ -12,7 +12,7 @@ RESOURCE_GROUP="Parking"
 REGION="germanywestcentral"
 APP_NAME="parking"
 ACR_NAME="parkingcr"
-CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-parking.alintrust.cz}"
+# CUSTOM_DOMAIN is read from deploy.env (set to empty to disable custom domain creation)
 
 # Credentials from environment variables (NEVER hardcode!)
 AZURE_CLIENT_ID="${AZURE_CLIENT_ID:?Environment variable AZURE_CLIENT_ID is required}"
