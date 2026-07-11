@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Request as FastAPIRequest
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -8,21 +8,11 @@ from app.models.enums import SpotType
 from app.services.auth import require_admin, get_current_user, generate_csrf_token, validate_csrf
 from app import models
 
-def _template_ctx(request: FastAPIRequest, **extra) -> dict:
-    """Base template context with request, user, and app_version"""
-    user = get_current_user(request)
-    ctx = {
-        "request": request,
-        "user": user,
-    }
-    ctx.update(extra)
-    return ctx
-
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory="app/templates")
 
 
-def _require_spots_manager(request: FastAPIRequest):
+def _require_spots_manager(request: Request):
     user = get_current_user(request)
     if not user.get("is_admin") and not user.get("can_manage_spots"):
         raise HTTPException(status_code=403, detail="Nemáte oprávnění spravovat parkovací místa")
@@ -32,21 +22,23 @@ def _require_spots_manager(request: FastAPIRequest):
 # ── Spots ──────────────────────────────────────────────────────────────────
 
 @router.get("/spots", response_class=HTMLResponse)
-async def spots(request: FastAPIRequest, db: Session = Depends(get_db)):
+async def spots(request: Request, db: Session = Depends(get_db)):
     _require_spots_manager(request)
     all_spots = db.query(models.Spot).order_by(models.Spot.floor, models.Spot.number).all()
     all_users = db.query(models.User).order_by(models.User.display_name).all()
-    return templates.TemplateResponse("admin/spots.html", _template_ctx(request,
-        spots=all_spots,
-        users=all_users,
-        csrf_token=generate_csrf_token(request),
-        back_url="/calendar",
-    ))
+    return templates.TemplateResponse("admin/spots.html", {
+        "request": request,
+        "user": get_current_user(request),
+        "spots": all_spots,
+        "users": all_users,
+        "csrf_token": generate_csrf_token(request),
+        "back_url": "/calendar",
+    })
 
 
 @router.post("/spots")
 async def create_spot(
-    request: FastAPIRequest,
+    request: Request,
     floor: str = Form(...),
     number: str = Form(...),
     spot_type: SpotType = Form(...),
@@ -70,7 +62,7 @@ async def create_spot(
 @router.post("/spots/{spot_id}/assign")
 async def assign_spot(
     spot_id: str,
-    request: FastAPIRequest,
+    request: Request,
     user_id: str | None = Form(None),
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
@@ -87,7 +79,7 @@ async def assign_spot(
 @router.post("/spots/{spot_id}/edit")
 async def edit_spot(
     spot_id: str,
-    request: FastAPIRequest,
+    request: Request,
     floor: str = Form(...),
     number: str = Form(...),
     spot_type: SpotType = Form(...),
@@ -115,7 +107,7 @@ async def edit_spot(
 @router.post("/spots/{spot_id}/deactivate")
 async def deactivate_spot(
     spot_id: str,
-    request: FastAPIRequest,
+    request: Request,
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -130,20 +122,22 @@ async def deactivate_spot(
 # ── Users ──────────────────────────────────────────────────────────────────
 
 @router.get("/users", response_class=HTMLResponse)
-async def users(request: FastAPIRequest, db: Session = Depends(get_db)):
+async def users(request: Request, db: Session = Depends(get_db)):
     require_admin(request)
     all_users = db.query(models.User).order_by(models.User.display_name).all()
-    return templates.TemplateResponse("admin/users.html", _template_ctx(request,
-        users=all_users,
-        csrf_token=generate_csrf_token(request),
-        back_url="/calendar",
-    ))
+    return templates.TemplateResponse("admin/users.html", {
+        "request": request,
+        "user": get_current_user(request),
+        "users": all_users,
+        "csrf_token": generate_csrf_token(request),
+        "back_url": "/calendar",
+    })
 
 
 @router.post("/users/{user_id}/toggle-admin")
 async def toggle_admin(
     user_id: str,
-    request: FastAPIRequest,
+    request: Request,
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -158,7 +152,7 @@ async def toggle_admin(
 @router.post("/users/{user_id}/toggle-guests")
 async def toggle_guests(
     user_id: str,
-    request: FastAPIRequest,
+    request: Request,
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -173,7 +167,7 @@ async def toggle_guests(
 @router.post("/users/{user_id}/toggle-reports")
 async def toggle_reports(
     user_id: str,
-    request: FastAPIRequest,
+    request: Request,
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -188,7 +182,7 @@ async def toggle_reports(
 @router.post("/users/{user_id}/toggle-spots")
 async def toggle_spots(
     user_id: str,
-    request: FastAPIRequest,
+    request: Request,
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
