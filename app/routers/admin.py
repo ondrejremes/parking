@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+import uuid
 
 from app.database import get_db
 from app.models.enums import SpotType
 from app.services.auth import require_admin, get_current_user, generate_csrf_token, validate_csrf
+from app.services.entra_id import get_entra_users
 from app import models
 
 router = APIRouter(prefix="/admin")
@@ -191,4 +193,62 @@ async def toggle_spots(
     user = db.query(models.User).filter_by(id=user_id).first()
     user.can_manage_spots = not user.can_manage_spots
     db.commit()
+    return RedirectResponse("/admin/users", status_code=303)
+
+
+# ── Entra ID Sync ──────────────────────────────────────────────────────────
+
+@router.get("/users/entra-sync")
+async def sync_entra_users(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    require_admin(request)
+    entra_users = await get_entra_users()
+
+    # Check which users are already registered
+    registered = {}
+    for user in db.query(models.User).filter(models.User.azure_oid != None).all():
+        registered[user.azure_oid] = user
+
+    new_users = []
+    for eu in entra_users:
+        if eu["id"] not in registered:
+            new_users.append(eu)
+
+    return JSONResponse({
+        "new_users": new_users,
+        "total_entra_users": len(entra_users),
+        "registered_users": len(registered),
+    })
+
+
+@router.post("/users/entra-register")
+async def register_entra_user(
+    request: Request,
+    azure_oid: str = Form(...),
+    display_name: str = Form(...),
+    email: str = Form(...),
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    require_admin(request)
+
+    # Check if already exists
+    existing = db.query(models.User).filter_by(azure_oid=azure_oid).first()
+    if existing:
+        return RedirectResponse("/admin/users", status_code=303)
+
+    # Create new user
+    user = models.User(
+        id=str(uuid.uuid4()),
+        azure_oid=azure_oid,
+        email=email,
+        display_name=display_name,
+        is_admin=False,
+    )
+    db.add(user)
+    db.commit()
+
     return RedirectResponse("/admin/users", status_code=303)
