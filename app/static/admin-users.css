@@ -100,3 +100,7 @@ table tbody td:nth-child(2) {
 .entra-form {
     margin-top: .5rem;
 }
+
+.error-message {
+    color: red;
+}
