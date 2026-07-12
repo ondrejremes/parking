@@ -1,3 +1,49 @@
+h1 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+#syncBtn {
+    margin-bottom: 1.5rem;
+    padding: .5rem 1rem;
+    background: #4B2D8F;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#syncResult {
+    display: none;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #e8f5e9;
+    border-radius: 5px;
+}
+
+#syncResult.show {
+    display: block;
+}
+
+table thead th {
+    text-align: center;
+}
+
+table tbody td:nth-child(1),
+table tbody td:nth-child(2),
+table tbody td:nth-child(3) {
+    text-align: left;
+}
+
+table tbody td:nth-child(2),
+table tbody td:nth-child(3) {
+    font-size: .8rem;
+}
+
+table tbody td:nth-child(2) {
+    color: #6b7280;
+}
+
 .role-btn {
     width: 32px;
     height: 28px;
@@ -45,4 +91,12 @@
 
 .entra-user button:hover {
     background: #3d2478;
+}
+
+.entra-email {
+    color: #6b7280;
+}
+
+.entra-form {
+    margin-top: .5rem;
 }

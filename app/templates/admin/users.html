@@ -2,13 +2,13 @@
 {% block title %}Správa uživatelů — Parking{% endblock %}
 {% block head %}<link rel="stylesheet" href="/static/admin-users.css">{% endblock %}
 {% block content %}
-<h1 style="font-size:1.25rem;margin-bottom:1.5rem">Uživatelé</h1>
+<h1>Uživatelé</h1>
 
-<button id="syncBtn" style="margin-bottom:1.5rem;padding:.5rem 1rem;background:#4B2D8F;color:#fff;border:none;border-radius:5px;cursor:pointer">
+<button id="syncBtn">
     🔄 Načíst uživatele z Entra ID
 </button>
 
-<div id="syncResult" style="display:none;margin-bottom:1.5rem;padding:1rem;background:#e8f5e9;border-radius:5px"></div>
+<div id="syncResult"></div>
 
 <table>
     <thead>
@@ -16,20 +16,20 @@
             <th>Jméno</th>
             <th>E-mail</th>
             <th>Zdroj</th>
-            <th style="text-align:center">Admin</th>
-            <th style="text-align:center">Správa míst</th>
-            <th style="text-align:center">Rezervace hostů</th>
-            <th style="text-align:center">Reporting</th>
+            <th>Admin</th>
+            <th>Správa míst</th>
+            <th>Rezervace hostů</th>
+            <th>Reporting</th>
         </tr>
     </thead>
     <tbody>
     {% for u in users %}
     <tr>
         <td>{{ u.display_name }}</td>
-        <td style="font-size:.8rem;color:#6b7280">{{ u.email }}</td>
-        <td style="font-size:.8rem">{{ 'SSO' if u.azure_oid else 'lokální' }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ 'SSO' if u.azure_oid else 'lokální' }}</td>
 
-        <td style="text-align:center">
+        <td>
             <form method="post" action="/admin/users/{{ u.id }}/toggle-admin">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit" class="role-btn {% if u.is_admin %}role-on{% endif %}"
@@ -39,7 +39,7 @@
             </form>
         </td>
 
-        <td style="text-align:center">
+        <td>
             <form method="post" action="/admin/users/{{ u.id }}/toggle-spots">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit" class="role-btn {% if u.can_manage_spots %}role-on{% endif %}"
@@ -49,7 +49,7 @@
             </form>
         </td>
 
-        <td style="text-align:center">
+        <td>
             <form method="post" action="/admin/users/{{ u.id }}/toggle-guests">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit" class="role-btn {% if u.can_manage_guests %}role-on{% endif %}"
@@ -59,7 +59,7 @@
             </form>
         </td>
 
-        <td style="text-align:center">
+        <td>
             <form method="post" action="/admin/users/{{ u.id }}/toggle-reports">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit" class="role-btn {% if u.can_view_reports %}role-on{% endif %}"
@@ -94,7 +94,7 @@ async function syncEntraUsers() {
         const msg = document.createElement('p');
         msg.innerHTML = `<strong>✅ Všichni uživatelé z Entra ID jsou již zaregistrováni!</strong><br>Registrovaných: ${data.registered_users}, Celkem v Entra ID: ${data.total_entra_users}`;
         result.appendChild(msg);
-        result.style.display = 'block';
+        result.classList.add('show');
         return;
     }
 
@@ -114,7 +114,7 @@ async function syncEntraUsers() {
         div.appendChild(document.createElement('br'));
 
         const email = document.createElement('span');
-        email.style.color = '#6b7280';
+        email.className = 'entra-email';
         email.textContent = user.mail;
         div.appendChild(email);
         div.appendChild(document.createElement('br'));
@@ -122,7 +122,7 @@ async function syncEntraUsers() {
         const form = document.createElement('form');
         form.method = 'post';
         form.action = '/admin/users/entra-register';
-        form.style.marginTop = '.5rem';
+        form.className = 'entra-form';
 
         const oid = document.createElement('input');
         oid.type = 'hidden';
