@@ -3,6 +3,12 @@
 {% block content %}
 <h1 style="font-size:1.25rem;margin-bottom:1.5rem">Uživatelé</h1>
 
+<button id="syncBtn" style="margin-bottom:1.5rem;padding:.5rem 1rem;background:#4B2D8F;color:#fff;border:none;border-radius:5px;cursor:pointer">
+    🔄 Načíst uživatele z Entra ID
+</button>
+
+<div id="syncResult" style="display:none;margin-bottom:1.5rem;padding:1rem;background:#e8f5e9;border-radius:5px"></div>
+
 <table>
     <thead>
         <tr>
@@ -75,5 +81,96 @@
     .role-btn:hover { border-color: #4B2D8F; color: #4B2D8F; }
     .role-btn.role-on { background: #4B2D8F; color: #fff; border-color: #4B2D8F; }
     .role-btn.role-on:hover { background: #3d2478; }
+    .entra-user { padding:.75rem;background:#f0f9ff;border:1px solid #bfdbfe;border-radius:5px;margin-bottom:.5rem }
+    .entra-user button { padding:.25rem .75rem;font-size:.85rem;background:#4B2D8F;color:#fff;border:none;border-radius:4px;cursor:pointer }
+    .entra-user button:hover { background:#3d2478 }
 </style>
+
+<script>
+document.getElementById('syncBtn').addEventListener('click', syncEntraUsers);
+
+async function syncEntraUsers() {
+    const btn = document.getElementById('syncBtn');
+    const result = document.getElementById('syncResult');
+    btn.disabled = true;
+    btn.textContent = '⏳ Načítání...';
+
+    const resp = await fetch('/admin/users/entra-sync');
+    const data = await resp.json();
+
+    btn.disabled = false;
+    btn.textContent = '🔄 Načíst uživatele z Entra ID';
+
+    result.innerHTML = '';
+
+    if (data.new_users.length === 0) {
+        const msg = document.createElement('p');
+        msg.innerHTML = `<strong>✅ Všichni uživatelé z Entra ID jsou již zaregistrováni!</strong><br>Registrovaných: ${data.registered_users}, Celkem v Entra ID: ${data.total_entra_users}`;
+        result.appendChild(msg);
+        result.style.display = 'block';
+        return;
+    }
+
+    const title = document.createElement('strong');
+    title.textContent = `📋 Nových uživatelů k registraci: ${data.new_users.length}`;
+    result.appendChild(title);
+    result.appendChild(document.createElement('br'));
+    result.appendChild(document.createElement('br'));
+
+    for (const user of data.new_users) {
+        const div = document.createElement('div');
+        div.className = 'entra-user';
+
+        const name = document.createElement('strong');
+        name.textContent = user.displayName;
+        div.appendChild(name);
+        div.appendChild(document.createElement('br'));
+
+        const email = document.createElement('span');
+        email.style.color = '#6b7280';
+        email.textContent = user.mail;
+        div.appendChild(email);
+        div.appendChild(document.createElement('br'));
+
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/admin/users/entra-register';
+        form.style.marginTop = '.5rem';
+
+        const oid = document.createElement('input');
+        oid.type = 'hidden';
+        oid.name = 'azure_oid';
+        oid.value = user.id;
+        form.appendChild(oid);
+
+        const displayName = document.createElement('input');
+        displayName.type = 'hidden';
+        displayName.name = 'display_name';
+        displayName.value = user.displayName;
+        form.appendChild(displayName);
+
+        const email_input = document.createElement('input');
+        email_input.type = 'hidden';
+        email_input.name = 'email';
+        email_input.value = user.mail;
+        form.appendChild(email_input);
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+
+        const btn = document.createElement('button');
+        btn.type = 'submit';
+        btn.textContent = '+ Zaregistrovat';
+        form.appendChild(btn);
+
+        div.appendChild(form);
+        result.appendChild(div);
+    }
+
+    result.style.display = 'block';
+}
+</script>
 {% endblock %}
