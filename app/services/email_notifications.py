@@ -32,7 +32,7 @@ async def send_reservation_confirmation(user_email: str, user_name: str, spot: d
 
     from datetime import datetime as dt
     date_obj = dt.strptime(date, "%d.%m.%Y")
-    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
 
     subject = "Potvrzení rezervace parkovacího místa"
     html_content = f"""
@@ -99,7 +99,7 @@ async def send_reservation_cancellation(user_email: str, user_name: str, spot: d
 
     from datetime import datetime as dt
     date_obj = dt.strptime(date, "%d.%m.%Y")
-    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
 
     subject = "Zrušení rezervace parkovacího místa"
     html_content = f"""
@@ -161,7 +161,7 @@ async def send_spot_release_notification(user_email: str, user_name: str, spot: 
 
     from datetime import datetime as dt
     date_obj = dt.strptime(date, "%d.%m.%Y")
-    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
 
     subject = "Vaše přidělené místo bylo uvolněno do sdíleného poolu"
     html_content = f"""
@@ -228,7 +228,7 @@ async def send_reservation_reminder(user_email: str, user_name: str, spot: dict,
 
     from datetime import datetime as dt
     date_obj = dt.strptime(date, "%d.%m.%Y")
-    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
 
     subject = "Připomenutí: Vaše rezervace parkovacího místa je zítra"
     html_content = f"""
