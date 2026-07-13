@@ -269,8 +269,8 @@ async def _send_email(to_email: str, subject: str, html_content: str, plain_text
             },
         }
 
-        poller = await client.begin_send(message)
-        result = await poller.result()
+        poller = client.begin_send(message)
+        result = poller.result()
 
         logger.info(f"✉️ Email poslán na {to_email}: {subject}")
         logger.debug(f"   Message ID: {result}")
