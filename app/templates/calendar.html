@@ -11,7 +11,22 @@
     .day-card {
         background: #fff; border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,.08);
-        margin-bottom: .75rem; overflow: hidden;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    @media (min-width: 901px) {
+        .day-card {
+            margin-bottom: .75rem;
+            flex: 1;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .day-card {
+            min-width: 300px;
+            max-width: 400px;
+        }
     }
     .day-header {
         padding: .55rem 1rem; display: flex; align-items: center;
@@ -125,10 +140,18 @@
     }
     .form-input:focus { outline: none; border-color: #4B2D8F; }
 
+    @media (max-width: 900px) {
+        .day-card { margin-right: .5rem; flex-shrink: 0; min-width: calc(100vw - 3rem); }
+        .week-nav { overflow-x: auto; padding-bottom: .5rem; }
+        .week-nav { display: flex; gap: .5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .day-card:last-child { margin-right: 0; }
+    }
+
     @media (max-width: 500px) {
         .week-nav h2 { font-size: .85rem; }
         .res-spot { min-width: 55px; font-size: .78rem; }
         .btn-cancel, .btn-release, .btn-reserve { font-size: .72rem; padding: .25rem .5rem; }
+        .day-card { min-width: calc(100vw - 2rem); }
     }
 </style>
 
@@ -139,7 +162,10 @@
     <a href="/calendar/week?week={{ prev_week }}" class="btn btn-secondary">←</a>
     <h2>{{ week_label }}</h2>
     <a href="/calendar/week?week={{ next_week }}" class="btn btn-secondary">→</a>
+    <a href="/calendar?month={{ back_url.split('month=')[1] if 'month=' in back_url else '' }}" class="btn btn-secondary" style="margin-left: auto;">Měsíc</a>
 </div>
+
+<div style="display: flex; gap: 0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0.5rem;">
 
 {% for day in days %}
 <div class="day-card">
@@ -332,4 +358,7 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
 {% endif %}
 
 {% endfor %}
+
+</div>
+
 {% endblock %}

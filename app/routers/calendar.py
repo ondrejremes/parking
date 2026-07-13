@@ -51,7 +51,7 @@ def _month_calendar_weeks(year: int, month: int) -> list[list[date | None]]:
 
 def _week_dates(anchor: date) -> list[date]:
     monday = anchor - timedelta(days=anchor.weekday())
-    return [monday + timedelta(days=i) for i in range(5)]
+    return [monday + timedelta(days=i) for i in range(7)]
 
 
 def _base_ctx(request: Request, user: dict) -> dict:
