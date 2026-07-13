@@ -88,21 +88,40 @@ async def get_entra_users():
             principal_id = assignment.get("principalId")
             principal_type = assignment.get("principalType")
 
-            if principal_type != "User" or not principal_id:
+            if not principal_id:
                 continue
 
-            # Get user details
-            user_url = f"https://graph.microsoft.com/v1.0/directoryObjects/{principal_id}"
-            user_resp = await client.get(user_url, headers=headers)
-            if user_resp.status_code == 200:
-                user_data = user_resp.json()
-                users.append({
-                    "id": user_data.get("id"),  # object ID
-                    "displayName": user_data.get("displayName", ""),
-                    "mail": user_data.get("mail", ""),
-                })
-            else:
-                logger.warning(f"Failed to get user details for {principal_id}: {user_resp.status_code}")
+            if principal_type == "User":
+                # Direct user assignment
+                user_url = f"https://graph.microsoft.com/v1.0/directoryObjects/{principal_id}"
+                user_resp = await client.get(user_url, headers=headers)
+                if user_resp.status_code == 200:
+                    user_data = user_resp.json()
+                    users.append({
+                        "id": user_data.get("id"),
+                        "displayName": user_data.get("displayName", ""),
+                        "mail": user_data.get("mail", ""),
+                    })
+                else:
+                    logger.warning(f"Failed to get user details for {principal_id}: {user_resp.status_code}")
+
+            elif principal_type == "Group":
+                # Group assignment - get all members
+                members_url = f"https://graph.microsoft.com/v1.0/groups/{principal_id}/members"
+                members_resp = await client.get(members_url, headers=headers)
+                if members_resp.status_code == 200:
+                    members = members_resp.json().get("value", [])
+                    logger.info(f"✓ Found {len(members)} members in group {principal_id[:8]}...")
+                    for member in members:
+                        member_type = member.get("@odata.type", "")
+                        if "user" in member_type.lower():
+                            users.append({
+                                "id": member.get("id"),
+                                "displayName": member.get("displayName", ""),
+                                "mail": member.get("mail", ""),
+                            })
+                else:
+                    logger.warning(f"Failed to get group members for {principal_id}: {members_resp.status_code}")
 
         logger.info(f"✓ Returning {len(users)} Entra ID users")
         return users
