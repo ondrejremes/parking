@@ -11,8 +11,11 @@ async def get_entra_users():
     Returns: list of {'id': oid, 'displayName': name, 'mail': email}
     """
     if not AZURE_CLIENT_ID or not AZURE_CLIENT_SECRET:
-        logger.warning("Missing AZURE_CLIENT_ID or AZURE_CLIENT_SECRET")
+        logger.warning(f"❌ Missing credentials: CLIENT_ID={bool(AZURE_CLIENT_ID)}, SECRET={bool(AZURE_CLIENT_SECRET)}")
         return []
+
+    logger.info(f"🔧 Entra ID config check: CLIENT_ID exists={bool(AZURE_CLIENT_ID)}, TENANT_ID={AZURE_TENANT_ID}")
+    logger.info(f"   CLIENT_ID length: {len(AZURE_CLIENT_ID) if AZURE_CLIENT_ID else 0}, SECRET length: {len(AZURE_CLIENT_SECRET) if AZURE_CLIENT_SECRET else 0}")
 
     try:
         # Get access token
@@ -55,8 +58,23 @@ async def get_entra_users():
             app_id = apps[0]["id"]
             logger.info(f"✓ Found app with ID: {app_id}")
 
+            # Get service principal for this app (needed for assignments)
+            sp_url = f"https://graph.microsoft.com/v1.0/servicePrincipals?$filter=appId eq '{AZURE_CLIENT_ID}'"
+            sp_resp = await client.get(sp_url, headers=headers)
+            if sp_resp.status_code != 200:
+                logger.error(f"Service Principal lookup failed: {sp_resp.status_code} - {sp_resp.text}")
+                return []
+
+            service_principals = sp_resp.json().get("value", [])
+            if not service_principals:
+                logger.warning(f"No service principal found for app {AZURE_CLIENT_ID}")
+                return []
+
+            sp_id = service_principals[0]["id"]
+            logger.info(f"✓ Found service principal with ID: {sp_id}")
+
             # Get app role assignments
-            assignments_url = f"https://graph.microsoft.com/v1.0/servicePrincipals/{app_id}/appRoleAssignedTo"
+            assignments_url = f"https://graph.microsoft.com/v1.0/servicePrincipals/{sp_id}/appRoleAssignedTo"
             assignments_resp = await client.get(assignments_url, headers=headers)
             if assignments_resp.status_code != 200:
                 logger.error(f"Assignments lookup failed: {assignments_resp.status_code} - {assignments_resp.text}")
