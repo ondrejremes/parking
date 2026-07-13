@@ -11,8 +11,14 @@ try:
 except:
     APP_VERSION = "v1.4.9"
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://parking:parking@localhost/parking")
-SESSION_SECRET = os.getenv("SESSION_SECRET", "change-me")
+DATABASE_URL = os.getenv("DATABASE_URL")
+SESSION_SECRET = os.getenv("SESSION_SECRET")
+
+# Defaults jen pro lokální development
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://parking:parking@localhost/parking"
+if not SESSION_SECRET:
+    SESSION_SECRET = "change-me-in-production"
 
 AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID", "")
 AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET", "")
