@@ -59,22 +59,28 @@
     .badge-res      { background: #dbeafe; color: #1e40af; }
     .badge-assigned { background: #ede9fe; color: #5b21b6; }
 
+    /* Unified button base styles */
+    .btn-action {
+        padding: .35rem .75rem; border-radius: 5px; border: none;
+        font-size: .78rem; cursor: pointer; font-weight: 500;
+        white-space: nowrap; transition: background-color .15s;
+    }
+
+    /* Action buttons - delete/release */
     .btn-cancel {
-        padding: .3rem .7rem; border-radius: 5px; border: none;
-        background: #fee2e2; color: #991b1b; font-size: .78rem;
-        cursor: pointer; white-space: nowrap; font-weight: 500;
+        background: #fee2e2; color: #991b1b;
     }
     .btn-cancel:hover { background: #fca5a5; }
+
     .btn-release {
-        padding: .3rem .7rem; border-radius: 5px; border: none;
-        background: #ede9fe; color: #5b21b6; font-size: .78rem;
-        cursor: pointer; white-space: nowrap; font-weight: 500;
+        background: #ede9fe; color: #5b21b6;
     }
     .btn-release:hover { background: #c4b5fd; }
+
+    /* Positive action */
     .btn-reserve {
-        padding: .3rem .75rem; border-radius: 5px; border: none;
-        background: #d1fae5; color: #065f46; font-size: .82rem;
-        cursor: pointer; font-weight: 600;
+        padding: .35rem .85rem; background: #d1fae5; color: #065f46;
+        font-size: .82rem; font-weight: 600;
     }
     .btn-reserve:hover { background: #a7f3d0; }
 
