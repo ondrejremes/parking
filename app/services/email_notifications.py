@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from app.config import ACS_CONNECTION_STRING, EMAIL_FROM
+from app.config import ACS_CONNECTION_STRING, EMAIL_FROM, BASE_URL
 from azure.communication.email import EmailClient
 
 logger = logging.getLogger(__name__)
@@ -30,6 +30,10 @@ async def send_reservation_confirmation(user_email: str, user_name: str, spot: d
     shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
     shift_time = {"FULL_DAY": "00:00-24:00", "DAY": "06:00-18:00", "NIGHT": "18:00-00:00"}.get(shift, "")
 
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+
     subject = "Potvrzení rezervace parkovacího místa"
     html_content = f"""
     <html>
@@ -57,6 +61,10 @@ async def send_reservation_confirmation(user_email: str, user_name: str, spot: d
             </table>
 
             <p>Pokud chcete rezervaci zrušit, můžete tak učinit v aplikaci minimálně 24 hodin před termínem.</p>
+
+            <p style="margin-top: 30px;">
+                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
+            </p>
 
             <hr style="margin: 30px 0;">
             <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
@@ -89,6 +97,10 @@ async def send_reservation_cancellation(user_email: str, user_name: str, spot: d
 
     shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
 
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+
     subject = "Zrušení rezervace parkovacího místa"
     html_content = f"""
     <html>
@@ -112,6 +124,10 @@ async def send_reservation_cancellation(user_email: str, user_name: str, spot: d
             </table>
 
             <p>Pokud jste si rezervaci zrušili omylem, můžete si místo znovu rezervovat v aplikaci.</p>
+
+            <p style="margin-top: 30px;">
+                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
+            </p>
 
             <hr style="margin: 30px 0;">
             <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
@@ -143,6 +159,10 @@ async def send_spot_release_notification(user_email: str, user_name: str, spot: 
 
     shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
 
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+
     subject = "Vaše přidělené místo bylo uvolněno do sdíleného poolu"
     html_content = f"""
     <html>
@@ -170,6 +190,10 @@ async def send_spot_release_notification(user_email: str, user_name: str, spot: 
             </table>
 
             <p>Své místo si můžete znovu přidělit v aplikaci.</p>
+
+            <p style="margin-top: 30px;">
+                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
+            </p>
 
             <hr style="margin: 30px 0;">
             <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
@@ -202,6 +226,10 @@ async def send_reservation_reminder(user_email: str, user_name: str, spot: dict,
 
     shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
 
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar?month={date_obj.strftime('%Y-%m')}"
+
     subject = "Připomenutí: Vaše rezervace parkovacího místa je zítra"
     html_content = f"""
     <html>
@@ -225,6 +253,10 @@ async def send_reservation_reminder(user_email: str, user_name: str, spot: dict,
             </table>
 
             <p>Pokud se nemůžete dostavit, zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní.</p>
+
+            <p style="margin-top: 30px;">
+                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
+            </p>
 
             <hr style="margin: 30px 0;">
             <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
