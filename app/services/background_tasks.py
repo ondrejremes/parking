@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 async def send_reservation_reminders():
     """
     Background task: Pošli reminder emaily den před rezervací
-    - Pouze pro přidělená místa (ASSIGNED)
+    - Pro všechny rezervace (přidělená i sdílená místa)
     - Kolem 19:00 (spouští se večer)
     """
     db = SessionLocal()
@@ -31,14 +31,11 @@ async def send_reservation_reminders():
         logger.info(f"🔍 Hledám reminder emaily na {tomorrow}: {len(reservations)} rezervací")
 
         for reservation in reservations:
-            # Ověř, že je to přidělené místo
+            # Zajdi místo a uživatele
             spot = db.query(models.Spot).filter_by(id=reservation.spot_id).first()
-            if not spot or spot.spot_type != SpotType.ASSIGNED:
-                continue
-
-            # Zajdi uživatele
             user = db.query(models.User).filter_by(id=reservation.user_id).first()
-            if not user:
+
+            if not spot or not user:
                 continue
 
             logger.info(f"📧 Posílám reminder: {user.email} - {spot.floor}/{spot.number}")
@@ -47,7 +44,7 @@ async def send_reservation_reminders():
             spot_dict = {
                 "floor": spot.floor,
                 "number": spot.number,
-                "spot_type": "Přidělené"
+                "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
             }
 
             await email_notifications.send_reservation_reminder(
@@ -58,7 +55,7 @@ async def send_reservation_reminders():
                 reservation.shift.value
             )
 
-        logger.info(f"✅ Remindery poslány")
+        logger.info(f"✅ Remindery poslány ({len(reservations)} emailů)")
 
     except Exception as e:
         logger.error(f"❌ Chyba v send_reservation_reminders: {e}", exc_info=True)
