@@ -2,11 +2,15 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from apscheduler.schedulers.background import BackgroundScheduler
+import logging
 
 from app.config import SESSION_SECRET, BASE_URL
 from app.middleware import SecurityHeadersMiddleware
 from app.routers import auth, calendar, reservations, releases, admin, guest_parkings, reporting, occupancy
+from app.services import background_tasks
 
+logger = logging.getLogger(__name__)
 app = FastAPI(title="Parking", docs_url=None, redoc_url=None)
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -27,6 +31,25 @@ app.include_router(admin.router)
 app.include_router(guest_parkings.router)
 app.include_router(occupancy.router)
 app.include_router(reporting.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicializuj background scheduler"""
+    scheduler = BackgroundScheduler()
+
+    # Reminder emails - každý den v 19:00
+    scheduler.add_job(
+        background_tasks.send_reservation_reminders,
+        "cron",
+        hour=19,
+        minute=0,
+        id="send_reminders",
+        name="Send reservation reminders",
+    )
+
+    scheduler.start()
+    logger.info("✅ Background scheduler spuštěn")
 
 
 @app.get("/")

@@ -1,0 +1,279 @@
+import logging
+from datetime import datetime
+from app.config import ACS_CONNECTION_STRING, EMAIL_FROM
+from azure.communication.email import EmailClient
+
+logger = logging.getLogger(__name__)
+
+# Whitelist pro testování - jen tyto emaily budou dostávat notifikace
+EMAIL_WHITELIST = {
+    "ondrej.remes@alintrust.cz",
+}
+
+# Nastavit na False až budeme hotovi s testováním
+WHITELIST_ENABLED = True
+
+
+def should_send_email(email: str) -> bool:
+    """Zjistit, jestli by se měl email poslat (kontrola whitelistu)"""
+    if not WHITELIST_ENABLED:
+        return True
+    return email.lower() in {e.lower() for e in EMAIL_WHITELIST}
+
+
+async def send_reservation_confirmation(user_email: str, user_name: str, spot: dict, date: str, shift: str):
+    """Potvrzení vytvoření rezervace"""
+    if not should_send_email(user_email):
+        logger.debug(f"Email {user_email} není na whitelistu, notifikace poslána není")
+        return
+
+    shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
+    shift_time = {"FULL_DAY": "00:00-24:00", "DAY": "06:00-18:00", "NIGHT": "18:00-00:00"}.get(shift, "")
+
+    subject = "Potvrzení rezervace parkovacího místa"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den,</p>
+            <p>vaše rezervace parkovacího místa byla úspěšně vytvořena.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{shift_name} ({shift_time})</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>🚗 Typ:</strong></td>
+                    <td style="padding: 8px;">{spot.get('spot_type', 'Sdílené')}</td>
+                </tr>
+            </table>
+
+            <p>Pokud chcete rezervaci zrušit, můžete tak učinit v aplikaci minimálně 24 hodin před termínem.</p>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den,
+
+vaše rezervace parkovacího místa byla úspěšně vytvořena.
+
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {shift_name} ({shift_time})
+🚗 Typ: {spot.get('spot_type', 'Sdílené')}
+
+Pokud chcete rezervaci zrušit, můžete tak učinit v aplikaci minimálně 24 hodin před termínem.
+
+Parkování App
+Alintrust"""
+
+    await _send_email(user_email, subject, html_content, plain_text)
+
+
+async def send_reservation_cancellation(user_email: str, user_name: str, spot: dict, date: str, shift: str):
+    """Oznámení zrušení rezervace"""
+    if not should_send_email(user_email):
+        logger.debug(f"Email {user_email} není na whitelistu, notifikace poslána není")
+        return
+
+    shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
+
+    subject = "Zrušení rezervace parkovacího místa"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den,</p>
+            <p>vaše rezervace parkovacího místa byla zrušena.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{shift_name}</td>
+                </tr>
+            </table>
+
+            <p>Pokud jste si rezervaci zrušili omylem, můžete si místo znovu rezervovat v aplikaci.</p>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den,
+
+vaše rezervace parkovacího místa byla zrušena.
+
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {shift_name}
+
+Pokud jste si rezervaci zrušili omylem, můžete si místo znovu rezervovat v aplikaci.
+
+Parkování App
+Alintrust"""
+
+    await _send_email(user_email, subject, html_content, plain_text)
+
+
+async def send_spot_release_notification(user_email: str, user_name: str, spot: dict, date: str, shift: str, released_by: str):
+    """Oznámení uvolnění místa"""
+    if not should_send_email(user_email):
+        logger.debug(f"Email {user_email} není na whitelistu, notifikace poslána není")
+        return
+
+    shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
+
+    subject = "Vaše přidělené místo bylo uvolněno do sdíleného poolu"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den,</p>
+            <p>vaše přidělené parkovací místo bylo uvolněno do sdíleného poolu a je nyní dostupné dalším zaměstnancům.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{shift_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>👤 Uvolnil/a:</strong></td>
+                    <td style="padding: 8px;">{released_by}</td>
+                </tr>
+            </table>
+
+            <p>Své místo si můžete znovu přidělit v aplikaci.</p>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den,
+
+vaše přidělené parkovací místo bylo uvolněno do sdíleného poolu a je nyní dostupné dalším zaměstnancům.
+
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {shift_name}
+👤 Uvolnil/a: {released_by}
+
+Své místo si můžete znovu přidělit v aplikaci.
+
+Parkování App
+Alintrust"""
+
+    await _send_email(user_email, subject, html_content, plain_text)
+
+
+async def send_reservation_reminder(user_email: str, user_name: str, spot: dict, date: str, shift: str):
+    """Připomenutí den před rezervací (jen přidělená místa)"""
+    if not should_send_email(user_email):
+        logger.debug(f"Email {user_email} není na whitelistu, notifikace poslána není")
+        return
+
+    shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
+
+    subject = "Připomenutí: Vaše rezervace parkovacího místa je zítra"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den,</p>
+            <p>připomínáme vám, že máte zítra zarezervované parkovací místo.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{shift_name}</td>
+                </tr>
+            </table>
+
+            <p>Pokud se nemůžete dostavit, zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní.</p>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den,
+
+připomínáme vám, že máte zítra zarezervované parkovací místo.
+
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {shift_name}
+
+Pokud se nemůžete dostavit, zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní.
+
+Parkování App
+Alintrust"""
+
+    await _send_email(user_email, subject, html_content, plain_text)
+
+
+async def _send_email(to_email: str, subject: str, html_content: str, plain_text: str):
+    """Poslat email přes Azure Communication Services"""
+    try:
+        if not ACS_CONNECTION_STRING:
+            logger.warning("ACS_CONNECTION_STRING není nastaven, email není poslán")
+            return
+
+        client = EmailClient.from_connection_string(ACS_CONNECTION_STRING)
+
+        message = {
+            "senderAddress": EMAIL_FROM,
+            "recipients": {
+                "to": [{"address": to_email}],
+            },
+            "content": {
+                "subject": subject,
+                "plainText": plain_text,
+                "html": html_content,
+            },
+        }
+
+        poller = await client.begin_send(message)
+        result = await poller.result()
+
+        logger.info(f"✉️ Email poslán na {to_email}: {subject}")
+        logger.debug(f"   Message ID: {result}")
+
+    except Exception as e:
+        logger.error(f"❌ Chyba při odesílání emailu na {to_email}: {e}", exc_info=True)

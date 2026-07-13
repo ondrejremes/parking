@@ -2,11 +2,14 @@ from datetime import date
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import asyncio
 
 from app.database import get_db
 from app.models.enums import Shift, ReleaseType
 from app.services.auth import get_current_user, validate_csrf
 from app.services.booking import create_release, retract_release
+from app.services import email_notifications
+from app import models
 
 router = APIRouter(prefix="/releases")
 
@@ -33,6 +36,26 @@ async def release(
         release_type=release_type,
         transfer_to_user_id=transfer_to_user_id or None,
     )
+
+    # Send notification email (async, don't wait)
+    spot = db.query(models.Spot).filter_by(id=spot_id).first()
+    if spot:
+        spot_dict = {
+            "floor": spot.floor,
+            "number": spot.number,
+            "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
+        }
+        asyncio.create_task(
+            email_notifications.send_spot_release_notification(
+                user["email"],
+                user.get("display_name", ""),
+                spot_dict,
+                day.strftime("%d.%m.%Y"),
+                shift.value,
+                user.get("display_name", "")
+            )
+        )
+
     return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
 
 
