@@ -2,10 +2,12 @@ from datetime import date, datetime, time, timezone
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import asyncio
 
 from app.database import get_db
 from app.services.auth import get_current_user, validate_csrf
 from app.services.availability import get_week_availability
+from app.services import email_notifications
 from app import models
 
 router = APIRouter(prefix="/guest-parkings")
@@ -80,6 +82,28 @@ async def create(
     )
     db.add(gp)
     db.commit()
+
+    # Send confirmation email (async, don't wait)
+    spot_dict = {
+        "floor": spot.floor,
+        "number": spot.number,
+        "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
+    }
+    asyncio.create_task(
+        email_notifications.send_guest_parking_confirmation(
+            user["email"],
+            user.get("display_name", ""),
+            guest_name.strip(),
+            guest_plate.strip() or "",
+            note.strip() or "",
+            contact.strip() or "",
+            spot_dict,
+            day.strftime("%d.%m.%Y"),
+            t_from.strftime("%H:%M"),
+            t_to.strftime("%H:%M")
+        )
+    )
+
     return RedirectResponse(back, status_code=303)
 
 
