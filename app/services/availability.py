@@ -438,6 +438,10 @@ def get_month_summary(
                     free_day_count += 1
                 if night_free:
                     free_night_count += 1
+        else:
+            # User has reservation or assigned spot - no options to show
+            free_day_count = 0
+            free_night_count = 0
 
         # Guest free options (ignores user restrictions) — for guest parking dialog
         guest_free_spots: list = []
