@@ -388,8 +388,10 @@ def get_month_summary(
 
     summary: dict[date, dict] = {}
     # Guest parkings created by this user in range
+    from sqlalchemy.orm import joinedload
     guest_parkings_list = (
         db.query(models.GuestParking)
+        .options(joinedload(models.GuestParking.spot))
         .filter(
             models.GuestParking.created_by_user_id == user_id,
             models.GuestParking.date >= start,
