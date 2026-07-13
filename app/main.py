@@ -14,21 +14,34 @@ from app.services import background_tasks
 
 logger = logging.getLogger(__name__)
 
-# Security check: in production, secrets must be from environment
-is_production = BASE_URL.startswith("https") and not os.getenv("DEBUG")
-if is_production:
-    if not os.getenv("SESSION_SECRET"):
-        logger.critical("❌ SESSION_SECRET must be set in production environment")
-        sys.exit(1)
-    if not os.getenv("DATABASE_URL"):
-        logger.critical("❌ DATABASE_URL must be set in production environment")
-        sys.exit(1)
-    if SESSION_SECRET.startswith("dev-"):
-        logger.critical("❌ SESSION_SECRET is using development default in production!")
-        sys.exit(1)
+# Security check: validate secrets are properly configured
+def _validate_secrets():
+    """Validate that critical secrets are properly configured."""
+    # Check if using development defaults (weak secrets)
+    if SESSION_SECRET.startswith("dev-") or SESSION_SECRET == "change-me-in-production":
+        if os.getenv("SESSION_SECRET"):  # Explicitly set to dev value
+            raise RuntimeError("SESSION_SECRET is using development default in production")
+
     if not DATABASE_URL.startswith("postgresql://"):
-        logger.critical("❌ DATABASE_URL is not valid in production!")
-        sys.exit(1)
+        raise RuntimeError("DATABASE_URL is not properly configured or missing")
+
+    # Ensure credentials are actually from environment in production
+    env_db = os.getenv("DATABASE_URL")
+    env_secret = os.getenv("SESSION_SECRET")
+    if BASE_URL.startswith("https"):
+        # Production: all secrets must come from environment, not defaults
+        if not env_db:
+            raise RuntimeError("DATABASE_URL must be set from environment in production")
+        if not env_secret:
+            raise RuntimeError("SESSION_SECRET must be set from environment in production")
+        if len(env_secret) < 32:
+            raise RuntimeError("SESSION_SECRET too weak for production (min 32 chars)")
+
+try:
+    _validate_secrets()
+except RuntimeError as e:
+    logger.critical(f"Security validation failed: {e}")
+    sys.exit(1)
 
 app = FastAPI(title="Parking", docs_url=None, redoc_url=None)
 
