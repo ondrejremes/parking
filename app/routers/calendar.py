@@ -122,8 +122,12 @@ async def calendar_week(
 
     today = date.today()
     try:
-        anchor = date.fromisoformat(week) if week else today
-    except ValueError:
+        if week:
+            # Handle both date (2026-07-22) and datetime (2026-07-22T00:00:00) formats
+            anchor = date.fromisoformat(week.split('T')[0]) if 'T' in week else date.fromisoformat(week)
+        else:
+            anchor = today
+    except (ValueError, AttributeError):
         anchor = today
 
     week_dates = _week_dates(anchor)
