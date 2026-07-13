@@ -6,20 +6,9 @@ from azure.communication.email import EmailClient
 
 logger = logging.getLogger(__name__)
 
-# Whitelist pro testování - jen tyto emaily budou dostávat notifikace
-EMAIL_WHITELIST = {
-    "ondrej.remes@alintrust.cz",
-}
-
-# Nastavit na False až budeme hotovi s testováním
-WHITELIST_ENABLED = True
-
-
 def should_send_email(email: str) -> bool:
-    """Zjistit, jestli by se měl email poslat (kontrola whitelistu)"""
-    if not WHITELIST_ENABLED:
-        return True
-    return email.lower() in {e.lower() for e in EMAIL_WHITELIST}
+    """Check if email is valid and should receive notifications."""
+    return email and "@" in email
 
 
 async def send_reservation_confirmation(user_email: str, user_name: str, spot: dict, date: str, shift: str):
