@@ -22,7 +22,7 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 
 ACS_CONNECTION_STRING = os.getenv("ACS_CONNECTION_STRING", "")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "parking@example.com")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "DoNotReply@alintrust.cz")
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 AZURE_REDIRECT_URI = os.getenv("AZURE_REDIRECT_URI", f"{BASE_URL}/auth/callback")
