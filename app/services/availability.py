@@ -381,11 +381,10 @@ def get_month_summary(
     # Free spots per day — two availability views:
     # - full_avail: with user restrictions (for personal reservation dialog)
     # - guest_avail: without user restrictions (for guest parking dialog)
-    future_dates = [d for d in dates if d >= date.today()]
-    full_avail = get_week_availability(db, future_dates, user_id) if future_dates else {}
+    full_avail = get_week_availability(db, dates, user_id) if dates else {}
     guest_avail = (
-        get_week_availability(db, future_dates, user_id, ignore_user_restrictions=True)
-        if future_dates else {}
+        get_week_availability(db, dates, user_id, ignore_user_restrictions=True)
+        if dates else {}
     )
 
     summary: dict[date, dict] = {}
