@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from html import escape
 from app.config import ACS_CONNECTION_STRING, EMAIL_FROM, BASE_URL
 from azure.communication.email import EmailClient
 
@@ -323,6 +324,12 @@ async def send_guest_parking_confirmation(user_email: str, user_name: str, guest
     date_obj = dt.strptime(date, "%d.%m.%Y")
     calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
 
+    # Escape user inputs to prevent HTML injection
+    safe_guest_name = escape(guest_name)
+    safe_guest_plate = escape(guest_plate or "neuvedeno")
+    safe_guest_company = escape(guest_company or "neuvedeno")
+    safe_guest_contact = escape(guest_contact or "neuvedeno")
+
     subject = "Potvrzení rezervace parkovacího místa pro hosta"
     html_content = f"""
     <html>
@@ -333,19 +340,19 @@ async def send_guest_parking_confirmation(user_email: str, user_name: str, guest
             <table style="border-collapse: collapse; margin: 20px 0;">
                 <tr>
                     <td style="padding: 8px;"><strong>👤 Host:</strong></td>
-                    <td style="padding: 8px;">{guest_name}</td>
+                    <td style="padding: 8px;">{safe_guest_name}</td>
                 </tr>
                 <tr>
                     <td style="padding: 8px;"><strong>🚗 SPZ:</strong></td>
-                    <td style="padding: 8px;">{guest_plate or "neuvedeno"}</td>
+                    <td style="padding: 8px;">{safe_guest_plate}</td>
                 </tr>
                 <tr>
                     <td style="padding: 8px;"><strong>🏢 Společnost:</strong></td>
-                    <td style="padding: 8px;">{guest_company or "neuvedeno"}</td>
+                    <td style="padding: 8px;">{safe_guest_company}</td>
                 </tr>
                 <tr>
                     <td style="padding: 8px;"><strong>📞 Kontakt:</strong></td>
-                    <td style="padding: 8px;">{guest_contact or "neuvedeno"}</td>
+                    <td style="padding: 8px;">{safe_guest_contact}</td>
                 </tr>
                 <tr>
                     <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
@@ -377,10 +384,10 @@ async def send_guest_parking_confirmation(user_email: str, user_name: str, guest
 
 rezervace parkovacího místa pro hosta byla úspěšně vytvořena.
 
-👤 Host: {guest_name}
-🚗 SPZ: {guest_plate or "neuvedeno"}
-🏢 Společnost: {guest_company or "neuvedeno"}
-📞 Kontakt: {guest_contact or "neuvedeno"}
+👤 Host: {safe_guest_name}
+🚗 SPZ: {safe_guest_plate}
+🏢 Společnost: {safe_guest_company}
+📞 Kontakt: {safe_guest_contact}
 📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
 📅 Datum: {date}
 ⏰ Čas: {time_from} – {time_to}
