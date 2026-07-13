@@ -7,9 +7,9 @@ load_dotenv()
 # Get version from git commit or use default
 try:
     GIT_COMMIT = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=os.path.dirname(os.path.dirname(__file__))).decode().strip()
-    APP_VERSION = f"v1.5.4+{GIT_COMMIT}"
+    APP_VERSION = f"v1.5.5+{GIT_COMMIT}"
 except:
-    APP_VERSION = "v1.5.4"
+    APP_VERSION = "v1.5.5"
 
 _DB_URL = os.getenv("DATABASE_URL")
 _SESSION_SECRET = os.getenv("SESSION_SECRET")
