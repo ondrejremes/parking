@@ -416,12 +416,12 @@ def get_month_summary(
         ]
 
         # Personal free options (respects user restrictions) — for own reservation dialog
-        # Only show if user doesn't already have a reservation on this day
+        # Only show if user doesn't have a reservation OR assigned spot on this day
         free_options: list = []
         free_spots: list = []
         free_day_count = 0    # spots free for DAY shift (or FULL_DAY)
         free_night_count = 0  # spots free for NIGHT shift
-        if d in full_avail and not my_res:
+        if d in full_avail and not my_res and not held:
             seen_spots: set = set()
             for shift in Shift:
                 for spot_id, shifts in full_avail[d].items():
