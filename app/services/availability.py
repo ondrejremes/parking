@@ -161,23 +161,25 @@ def get_week_availability(
                                for gp in day_guests):
                             day_status[shift] = "taken"
 
-            # If user has an unreleased assigned spot, mark DAY and FULL_DAY on OTHER spots
-            # as blocked (assigned spot covers the day shift 8-18 only)
-            if user_assigned_spot and str(spot.id) != str(user_assigned_spot.id):
-                for shift in (Shift.FULL_DAY, Shift.DAY):
-                    if day_status[shift] == "free" and (d, shift) not in user_released:
-                        day_status[shift] = "blocked"
+            # Apply user restrictions (only when NOT computing guest availability)
+            if not ignore_user_restrictions:
+                # If user has an unreleased assigned spot, mark DAY and FULL_DAY on OTHER spots
+                # as blocked (assigned spot covers the day shift 8-18 only)
+                if user_assigned_spot and str(spot.id) != str(user_assigned_spot.id):
+                    for shift in (Shift.FULL_DAY, Shift.DAY):
+                        if day_status[shift] == "free" and (d, shift) not in user_released:
+                            day_status[shift] = "blocked"
 
-            # If user already has a reservation on another spot for this day,
-            # mark conflicting shifts as blocked
-            booked_shifts = user_booked.get(d, set())
-            if booked_shifts:
-                for shift in Shift:
-                    if day_status[shift] == "free":
-                        for booked in booked_shifts:
-                            if _shifts_conflict(booked, shift):
-                                day_status[shift] = "blocked"
-                                break
+                # If user already has a reservation on another spot for this day,
+                # mark conflicting shifts as blocked
+                booked_shifts = user_booked.get(d, set())
+                if booked_shifts:
+                    for shift in Shift:
+                        if day_status[shift] == "free":
+                            for booked in booked_shifts:
+                                if _shifts_conflict(booked, shift):
+                                    day_status[shift] = "blocked"
+                                    break
 
             result[d][spot.id] = day_status
 
