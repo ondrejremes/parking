@@ -5,8 +5,8 @@
     .month-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem; }
     .month-nav h2 { font-size:1.1rem; font-weight:700; flex:1; text-align:center; }
 
-    .month-grid { background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden; }
-    .month-grid table { width:100%; border-collapse:collapse; }
+    .month-grid { background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.08); overflow-x:auto; overflow-y:auto; max-height:70vh; }
+    .month-grid table { width:100%; min-width:500px; border-collapse:collapse; }
     .month-grid th {
         background:#f9fafb; text-align:center; padding:.5rem .25rem;
         font-size:.8rem; font-weight:600; color:#374151;
