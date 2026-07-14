@@ -454,6 +454,11 @@ def get_month_summary(
                         guest_free_spots.append(spot_map[spot_id])
                         seen.add(spot_id)
                         break
+        else:
+            # DEBUG: Log why guest_avail is missing
+            import sys
+            if str(d) in ['2026-07-17', '2026-07-18', '2026-07-19']:
+                print(f"DEBUG: {d} not in guest_avail. Keys: {list(guest_avail.keys())[:5]}", file=sys.stderr)
 
         summary[d] = {
             "reservations": my_res,
