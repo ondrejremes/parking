@@ -179,6 +179,7 @@
 <div style="display: flex; gap: 0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 0.5rem;">
 
 {% for day in days %}
+<!-- DEBUG: date={{ day.date }}, can_add_guest={{ day.can_add_guest }}, guest_spots={{ day.guest_free_spots|length }}, user_can_manage={{ user.can_manage_guests }} -->
 <div class="day-card">
     <div class="day-header{% if day.is_today %} today{% elif day.is_past %} past{% endif %}">
         <span class="day-name">{{ day.label }}</span>
