@@ -180,7 +180,6 @@
 <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; padding-bottom: 0.5rem;">
 
 {% for day in days %}
-<!-- DEBUG: date={{ day.date }}, can_add_guest={{ day.can_add_guest }}, guest_spots={{ day.guest_free_spots|length }}, user_can_manage={{ user.can_manage_guests }} -->
 <div class="day-card">
     <div class="day-header{% if day.is_today %} today{% elif day.is_past %} past{% endif %}">
         <span class="day-name">{{ day.label }}</span>
@@ -266,7 +265,6 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
             {% endfor %}
         {% endif %}
 
-        {# Guest booking button - dostupné vždy (независимо od rezervací) #}
         {% if day.can_add_guest and user.can_manage_guests %}
         <div style="margin-top:.4rem">
             <button class="btn-guest" data-open-dialog="gdlg-{{ day.date.isoformat() }}">
