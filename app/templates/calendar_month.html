@@ -239,8 +239,8 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                 </button>
                 {% endif %}
 
-                {# Rezervovat pro hosta — jen pokud jsou volná sdílená místa #}
-                {% if not is_past and day_data.get('guest_free_spots', []) %}
+                {# Rezervovat pro hosta — jen pokud jsou volná místa a uživatel má právo #}
+                {% if not is_past and day_data.get('guest_free_spots', []) and user.can_manage_guests %}
                 <button class="btn-guest" data-open-dialog="gdlg-{{ dk }}">+ Host</button>
                 {% endif %}
 

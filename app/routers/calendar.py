@@ -157,7 +157,7 @@ async def calendar_week(
             "free_options": day_data["free_options"],
             "guest_parkings": day_data.get("guest_parkings", []),
             "guest_free_spots": day_data.get("guest_free_spots", []),
-            "can_add_guest": bool(day_data.get("guest_free_spots")) and d >= today,
+            "can_add_guest": bool(day_data.get("guest_free_spots")) and d >= today and user.get("can_manage_guests", False),
         })
 
     ctx = _base_ctx(request, user)
