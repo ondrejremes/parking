@@ -103,6 +103,38 @@ async def send_reservation_reminders():
             )
             sent_count += 1
 
+        # 3. Najdi všechna guest parkings na zítřek
+        guest_parkings = db.query(models.GuestParking).filter(
+            and_(
+                models.GuestParking.date == tomorrow,
+                models.GuestParking.cancelled_at == None,
+            )
+        ).all()
+
+        for gp in guest_parkings:
+            user = db.query(models.User).filter_by(id=gp.created_by_user_id).first()
+            spot = db.query(models.Spot).filter_by(id=gp.spot_id).first()
+
+            if not user or not user.email or not spot:
+                continue
+
+            logger.info(f"📧 Posílám reminder (guest parking): {user.email} - {gp.guest_name} na {spot.floor}/{spot.number}")
+
+            spot_dict = {
+                "floor": spot.floor,
+                "number": spot.number,
+                "spot_type": "Host"
+            }
+
+            await email_notifications.send_reservation_reminder(
+                user.email,
+                user.display_name,
+                spot_dict,
+                tomorrow.strftime("%d.%m.%Y"),
+                f"Host: {gp.guest_name} ({gp.time_from.strftime('%H:%M')}–{gp.time_to.strftime('%H:%M')})"
+            )
+            sent_count += 1
+
         logger.info(f"✅ Remindery poslány ({sent_count} emailů)")
 
     except Exception as e:
