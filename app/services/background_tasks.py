@@ -13,6 +13,7 @@ async def send_reservation_reminders():
     """
     Background task: Pošli reminder emaily den před rezervací
     - Pro všechny rezervace (přidělená i sdílená místa)
+    - Pro přidělená místa (bez rezervace)
     - Kolem 19:00 (spouští se večer)
     """
     db = SessionLocal()
@@ -20,7 +21,11 @@ async def send_reservation_reminders():
         # Zítra
         tomorrow = datetime.now().date() + timedelta(days=1)
 
-        # Najdi všechny rezervace na zítřejší den
+        logger.info(f"🔍 Hledám reminder emaily na {tomorrow}")
+
+        sent_count = 0
+
+        # 1. Najdi všechny rezervace na zítřejší den
         reservations = db.query(models.Reservation).filter(
             and_(
                 models.Reservation.date == tomorrow,
@@ -28,17 +33,15 @@ async def send_reservation_reminders():
             )
         ).all()
 
-        logger.info(f"🔍 Hledám reminder emaily na {tomorrow}: {len(reservations)} rezervací")
-
         for reservation in reservations:
             # Zajdi místo a uživatele
             spot = db.query(models.Spot).filter_by(id=reservation.spot_id).first()
             user = db.query(models.User).filter_by(id=reservation.user_id).first()
 
-            if not spot or not user:
+            if not spot or not user or not user.email:
                 continue
 
-            logger.info(f"📧 Posílám reminder: {user.email} - {spot.floor}/{spot.number}")
+            logger.info(f"📧 Posílám reminder (rezervace): {user.email} - {spot.floor}/{spot.number}")
 
             # Pošli reminder
             spot_dict = {
@@ -54,8 +57,53 @@ async def send_reservation_reminders():
                 tomorrow.strftime("%d.%m.%Y"),
                 reservation.shift.value
             )
+            sent_count += 1
 
-        logger.info(f"✅ Remindery poslány ({len(reservations)} emailů)")
+        # 2. Najdi všechna přidělená místa (pro uživatele bez rezervace na zítřek)
+        assigned_spots = db.query(models.Spot).filter(
+            and_(
+                models.Spot.assigned_user_id != None,
+                models.Spot.active == True,
+            )
+        ).all()
+
+        for spot in assigned_spots:
+            user = db.query(models.User).filter_by(id=spot.assigned_user_id).first()
+
+            if not user or not user.email:
+                continue
+
+            # Kontrola: má uživatel už rezervaci na zítřek na jiném místě?
+            existing_reservation = db.query(models.Reservation).filter(
+                and_(
+                    models.Reservation.user_id == user.id,
+                    models.Reservation.date == tomorrow,
+                    models.Reservation.cancelled_at == None,
+                )
+            ).first()
+
+            if existing_reservation:
+                # Už má rezervaci, neposílej duplikát
+                continue
+
+            logger.info(f"📧 Posílám reminder (přidělené místo): {user.email} - {spot.floor}/{spot.number}")
+
+            spot_dict = {
+                "floor": spot.floor,
+                "number": spot.number,
+                "spot_type": "Přidělené"
+            }
+
+            await email_notifications.send_reservation_reminder(
+                user.email,
+                user.display_name,
+                spot_dict,
+                tomorrow.strftime("%d.%m.%Y"),
+                "FULL_DAY"
+            )
+            sent_count += 1
+
+        logger.info(f"✅ Remindery poslány ({sent_count} emailů)")
 
     except Exception as e:
         logger.error(f"❌ Chyba v send_reservation_reminders: {e}", exc_info=True)
