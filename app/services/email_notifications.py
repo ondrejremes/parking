@@ -3,6 +3,7 @@ from datetime import datetime
 from html import escape
 from app.config import ACS_CONNECTION_STRING, EMAIL_FROM, BASE_URL
 from azure.communication.email import EmailClient
+from app import monitoring
 
 logger = logging.getLogger(__name__)
 
@@ -297,8 +298,13 @@ async def _send_email(to_email: str, subject: str, html_content: str, plain_text
         logger.info(f"✉️ Email poslán na {to_email}: {subject}")
         logger.debug(f"   Message ID: {result}")
 
+        # Track successful email send
+        monitoring.track_email_sent(to_email, subject, True, message_id=str(result.get("id")))
+
     except Exception as e:
         logger.error(f"❌ Chyba při odesílání emailu na {to_email}: {e}", exc_info=True)
+        # Track email send failure
+        monitoring.track_email_sent(to_email, subject, False, error=str(e))
 
 
 async def send_guest_parking_confirmation(user_email: str, user_name: str, guest_name: str, guest_plate: str,
