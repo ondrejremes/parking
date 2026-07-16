@@ -22,7 +22,7 @@ def setup_application_insights():
     connection_string = os.getenv("APPINSIGHTS_CONNECTION_STRING")
 
     if not connection_string:
-        logger.debug("⚠️  APPINSIGHTS_CONNECTION_STRING not set, monitoring disabled")
+        logger.warning("⚠️  APPINSIGHTS_CONNECTION_STRING not set, monitoring disabled")
         return False
 
     try:
@@ -30,8 +30,7 @@ def setup_application_insights():
         logger.info("✅ Application Insights initialized")
         return True
     except Exception as e:
-        logger.warning(f"⚠️  Application Insights initialization warning: {e}")
-        # Don't fail startup if monitoring fails — app should still work
+        logger.error(f"❌ Error initializing Application Insights: {e}")
         return False
 
 
