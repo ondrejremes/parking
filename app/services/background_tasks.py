@@ -5,7 +5,6 @@ from app.database import SessionLocal
 from app import models
 from app.models.enums import SpotType
 from app.services import email_notifications
-from app import monitoring
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ async def send_reservation_reminders():
         tomorrow = datetime.now().date() + timedelta(days=1)
 
         logger.info(f"🔍 Hledám reminder emaily na {tomorrow}")
-        monitoring.track_scheduler_job("send_reservation_reminders", "started")
 
         sent_count = 0
 
@@ -138,10 +136,8 @@ async def send_reservation_reminders():
             sent_count += 1
 
         logger.info(f"✅ Remindery poslány ({sent_count} emailů)")
-        monitoring.track_scheduler_job("send_reservation_reminders", "success", {"email_count": sent_count})
 
     except Exception as e:
         logger.error(f"❌ Chyba v send_reservation_reminders: {e}", exc_info=True)
-        monitoring.track_scheduler_job("send_reservation_reminders", "failure", {"error": str(e)})
     finally:
         db.close()
