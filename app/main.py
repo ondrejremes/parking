@@ -11,7 +11,6 @@ from app.config import SESSION_SECRET, BASE_URL, DATABASE_URL
 from app.middleware import SecurityHeadersMiddleware
 from app.routers import auth, calendar, reservations, releases, admin, guest_parkings, reporting, occupancy
 from app.services import background_tasks
-from app import monitoring
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +67,7 @@ app.include_router(reporting.router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Inicializuj Application Insights monitoring a background scheduler"""
-    # Setup monitoring (non-critical — app continues if it fails)
-    monitoring.setup_application_insights()
-
+    """Inicializuj background scheduler"""
     scheduler = BackgroundScheduler()
 
     # Reminder emails - každý den v 19:00
