@@ -3,9 +3,11 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 import logging
 import os
 import sys
+import pytz
 
 from app.config import SESSION_SECRET, BASE_URL, DATABASE_URL
 from app.middleware import SecurityHeadersMiddleware
@@ -70,18 +72,17 @@ async def startup_event():
     """Inicializuj background scheduler"""
     scheduler = BackgroundScheduler()
 
-    # Reminder emails - každý den v 19:00
+    # Reminder emails - každý den v 19:00 (Czech time)
+    cz_tz = pytz.timezone("Europe/Prague")
     scheduler.add_job(
         background_tasks.send_reservation_reminders,
-        "cron",
-        hour=19,
-        minute=0,
+        trigger=CronTrigger(hour=19, minute=0, timezone=cz_tz),
         id="send_reminders",
         name="Send reservation reminders",
     )
 
     scheduler.start()
-    logger.info("✅ Background scheduler spuštěn")
+    logger.info("✅ Background scheduler spuštěn (19:00 Europe/Prague)")
 
 
 @app.get("/")
