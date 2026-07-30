@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy import and_
 from app.database import SessionLocal
@@ -9,7 +10,7 @@ from app.services import email_notifications
 logger = logging.getLogger(__name__)
 
 
-async def send_reservation_reminders():
+async def _send_reservation_reminders_async():
     """
     Background task: Pošli reminder emaily den před rezervací
     - Pro všechny rezervace (přidělená i sdílená místa)
@@ -141,3 +142,16 @@ async def send_reservation_reminders():
         logger.error(f"❌ Chyba v send_reservation_reminders: {e}", exc_info=True)
     finally:
         db.close()
+
+
+def send_reservation_reminders():
+    """Synchronní wrapper pro APScheduler — spouští async funkci v event loopu."""
+    try:
+        asyncio.run(_send_reservation_reminders_async())
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called from a running event loop" in str(e):
+            logger.info("Scheduler běží v event loopu, používám create_task")
+            loop = asyncio.get_event_loop()
+            loop.create_task(_send_reservation_reminders_async())
+        else:
+            raise
