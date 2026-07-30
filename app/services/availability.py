@@ -4,6 +4,11 @@ from app import models
 from app.models.enums import Shift, SpotType, ReleaseType
 from typing import Any
 
+
+def _is_weekend(d: date) -> bool:
+    """Returns True if d is Saturday (5) or Sunday (6)."""
+    return d.weekday() >= 5
+
 # Shift time ranges for guest-parking conflict detection
 _SHIFT_RANGES: dict[Shift, list[tuple[time, time]]] = {
     Shift.FULL_DAY: [(time(0, 0), time(23, 59))],
@@ -195,7 +200,7 @@ def _spot_day_status(
 ) -> dict[Shift, str]:
     status = {}
     for shift in Shift:
-        status[shift] = _shift_status(spot, shift, current_user_id, reservations, releases)
+        status[shift] = _shift_status(spot, shift, current_user_id, reservations, releases, day)
     return status
 
 
@@ -205,6 +210,7 @@ def _shift_status(
     current_user_id,
     reservations: list[models.Reservation],
     releases: list[models.Release],
+    day: date | None = None,
 ) -> str:
     # Check if there's a conflicting reservation
     for res in reservations:
@@ -227,7 +233,11 @@ def _shift_status(
                 return "free"
             return "taken"
 
-    # No release — spot is blocked unless current user is the owner
+    # No release — assigned spot is automatically "released" on weekends (Sat/Sun)
+    if day and _is_weekend(day):
+        return "free"
+
+    # Workdays (Mon-Fri): spot is blocked unless current user is the owner
     if str(spot.assigned_user_id) == str(current_user_id):
         return "mine"  # their own spot, implicitly "held"
     return "blocked"
@@ -275,7 +285,7 @@ def get_week_detail(db: Session, week_dates: list[date], current_user_id, spots:
             day_rel   = release_index.get((spot.id, d), [])
             slot_detail: dict[Shift, dict] = {}
             for shift in Shift:
-                status = _shift_status(spot, shift, current_user_id, day_res, day_rel)
+                status = _shift_status(spot, shift, current_user_id, day_res, day_rel, d)
                 res_id = None
                 is_assigned_held = False
                 if status == "mine":
@@ -410,10 +420,11 @@ def get_month_summary(
         my_res = res_by_date.get(d, [])
 
         # Assigned spots held implicitly: (spot, spot_id)
+        # On weekends, assigned spots are not held (treated as released)
         reserved_spot_ids = {spot.id for spot, _, _ in my_res}
         held = [
             (s, s.id) for s in assigned_spots
-            if (s.id, d) not in released and s.id not in reserved_spot_ids
+            if (s.id, d) not in released and s.id not in reserved_spot_ids and not _is_weekend(d)
         ]
 
         # Personal free options (respects user restrictions) — for own reservation dialog

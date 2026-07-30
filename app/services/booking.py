@@ -106,11 +106,18 @@ def _user_has_unreleased_assigned_spot(db: Session, user_id, day: date, shift: S
     """
     Returns the assigned spot if the user has one that is NOT released for the
     given day/shift — meaning they should not be able to book another spot.
-    Only applies to DAY and FULL_DAY shifts: assigned spots cover the working
-    day (8-18), so NIGHT shift is not restricted.
+    Only applies to workdays (Mon-Fri), DAY and FULL_DAY shifts.
+    Weekends (Sat-Sun): assigned spot is automatically treated as released.
+    NIGHT shift: assigned spots don't restrict NIGHT bookings.
     """
+    from app.services.availability import _is_weekend
+
     # Assigned spot only covers DAY shift hours — NIGHT is unrestricted
     if shift == Shift.NIGHT:
+        return None
+
+    # Weekends: assigned spot is automatically released (not blocking)
+    if _is_weekend(day):
         return None
 
     assigned = (
@@ -189,6 +196,6 @@ def _assert_bookable(db: Session, spot: models.Spot, day: date, shift: Shift, us
         .all()
     )
 
-    status = _shift_status(spot, shift, user_id, existing_res, releases)
+    status = _shift_status(spot, shift, user_id, existing_res, releases, day)
     if status not in ("free",):
         raise HTTPException(status_code=409, detail=f"Slot not available (status: {status})")
