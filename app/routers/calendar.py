@@ -94,6 +94,7 @@ async def calendar_month(
 
     spots = db.query(models.Spot).filter_by(active=True).order_by(models.Spot.floor, models.Spot.number).all()
     summary = get_month_summary(db, all_dates, user["id"], spots)
+    users = db.query(models.User).order_by(models.User.display_name).all()
 
     ctx = _base_ctx(request, user)
     ctx.update({
@@ -104,6 +105,7 @@ async def calendar_month(
         "next_month": next_month.strftime("%Y-%m"),
         "today": today,
         "csrf_token": generate_csrf_token(request),
+        "all_users": users,
     })
     return templates.TemplateResponse("calendar_month.html", ctx)
 
