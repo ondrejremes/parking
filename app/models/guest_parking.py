@@ -11,6 +11,7 @@ class GuestParking(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     spot_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("spots.id"), nullable=False)
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    contact_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     date: Mapped[Date] = mapped_column(Date, nullable=False)
     time_from: Mapped[Time] = mapped_column(Time, nullable=False)
     time_to: Mapped[Time] = mapped_column(Time, nullable=False)
@@ -23,3 +24,4 @@ class GuestParking(Base):
 
     spot = relationship("Spot")
     created_by = relationship("User", foreign_keys=[created_by_user_id])
+    contact_user = relationship("User", foreign_keys=[contact_user_id])

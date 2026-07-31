@@ -160,6 +160,8 @@ async def calendar_week(
             "can_add_guest": bool(day_data.get("guest_free_spots")) and d >= today and user.get("can_manage_guests", False),
         })
 
+    users = db.query(models.User).order_by(models.User.display_name).all()
+
     ctx = _base_ctx(request, user)
     ctx.update({
         "days": days,
@@ -169,5 +171,6 @@ async def calendar_week(
         "today": today,
         "csrf_token": generate_csrf_token(request),
         "back_url": f"/calendar?month={back_month}",
+        "all_users": users,
     })
     return templates.TemplateResponse("calendar.html", ctx)

@@ -33,7 +33,7 @@ async def create(
     guest_name: str = Form(...),
     guest_plate: str = Form(""),
     note: str = Form(""),
-    contact: str = Form(""),
+    contact_user_id: str = Form(None),
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -72,18 +72,18 @@ async def create(
     gp = models.GuestParking(
         spot_id=spot_id,
         created_by_user_id=user["id"],
+        contact_user_id=contact_user_id if contact_user_id else None,
         date=day,
         time_from=t_from,
         time_to=t_to,
         guest_name=guest_name.strip(),
         guest_plate=guest_plate.strip() or None,
         note=note.strip() or None,
-        contact=contact.strip() or None,
     )
     db.add(gp)
     db.commit()
 
-    # Send confirmation email (async, don't wait)
+    # Send confirmation email to sponsor (creator)
     spot_dict = {
         "floor": spot.floor,
         "number": spot.number,
@@ -96,13 +96,31 @@ async def create(
             guest_name.strip(),
             guest_plate.strip() or "",
             note.strip() or "",
-            contact.strip() or "",
             spot_dict,
             day.strftime("%d.%m.%Y"),
             t_from.strftime("%H:%M"),
             t_to.strftime("%H:%M")
         )
     )
+
+    # Send notification to contact person if specified
+    if contact_user_id:
+        contact_user = db.query(models.User).filter_by(id=contact_user_id).first()
+        if contact_user and contact_user.email:
+            asyncio.create_task(
+                email_notifications.send_guest_parking_contact_notification(
+                    contact_user.email,
+                    contact_user.display_name,
+                    user.get("display_name", ""),
+                    guest_name.strip(),
+                    guest_plate.strip() or "",
+                    note.strip() or "",
+                    spot_dict,
+                    day.strftime("%d.%m.%Y"),
+                    t_from.strftime("%H:%M"),
+                    t_to.strftime("%H:%M")
+                )
+            )
 
     return RedirectResponse(back, status_code=303)
 

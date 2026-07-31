@@ -124,15 +124,16 @@ async def _send_reservation_reminders_async():
             spot_dict = {
                 "floor": spot.floor,
                 "number": spot.number,
-                "spot_type": "Host"
             }
 
-            await email_notifications.send_reservation_reminder(
+            await email_notifications.send_guest_parking_reminder(
                 user.email,
                 user.display_name,
+                gp.guest_name,
                 spot_dict,
                 tomorrow.strftime("%d.%m.%Y"),
-                f"Host: {gp.guest_name} ({gp.time_from.strftime('%H:%M')}–{gp.time_to.strftime('%H:%M')})"
+                gp.time_from.strftime("%H:%M"),
+                gp.time_to.strftime("%H:%M")
             )
             sent_count += 1
 
