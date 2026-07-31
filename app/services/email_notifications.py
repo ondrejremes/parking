@@ -270,6 +270,85 @@ Alintrust"""
     await _send_email(user_email, subject, html_content, plain_text)
 
 
+async def send_assigned_spot_reservation_confirmation(user_email: str, user_name: str, spot: dict, date: str, shift: str):
+    """Potvrzení vytvoření rezervace na přidělené místo (obsahuje možnost uvolnit)"""
+    if not should_send_email(user_email):
+        logger.debug(f"Email {user_email} není na whitelistu, notifikace poslána není")
+        return
+
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
+
+    shift_name = {"FULL_DAY": "Celý den", "DAY": "Denní směna", "NIGHT": "Noční směna"}.get(shift, shift)
+
+    subject = "Potvrzení rezervace přiděleného parkovacího místa"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den,</p>
+            <p>vaše rezervace vašeho přiděleného parkovacího místa byla potvrzena.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{shift_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>🚗 Typ:</strong></td>
+                    <td style="padding: 8px;">Přidělené místo</td>
+                </tr>
+            </table>
+
+            <p><strong>Možnosti pro toto místo:</strong></p>
+            <ul>
+                <li>Zrušit rezervaci (pokud se plán změní)</li>
+                <li>Uvolnit místo do sdíleného poolu</li>
+                <li>Předat místo konkrétní osobě</li>
+            </ul>
+
+            <p>Všechny tyto akce můžete provést v aplikaci minimálně 24 hodin před termínem.</p>
+
+            <p style="margin-top: 30px;">
+                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
+            </p>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den,
+
+vaše rezervace vašeho přiděleného parkovacího místa byla potvrzena.
+
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {shift_name}
+🚗 Typ: Přidělené místo
+
+MOŽNOSTI PRO TOTO MÍSTO:
+- Zrušit rezervaci (pokud se plán změní)
+- Uvolnit místo do sdíleného poolu
+- Předat místo konkrétní osobě
+
+Všechny tyto akce můžete provést v aplikaci minimálně 24 hodin před termínem.
+
+Parkování App
+Alintrust"""
+
+    await _send_email(user_email, subject, html_content, plain_text)
+
+
 async def send_guest_parking_reminder(user_email: str, user_name: str, guest_name: str, spot: dict,
                                        date: str, time_from: str, time_to: str):
     """Připomenutí pro guest parking - odesíláno na sponsora"""

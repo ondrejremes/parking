@@ -9,6 +9,7 @@ from app.models.enums import Shift
 from app.services.auth import get_current_user, validate_csrf
 from app.services.booking import create_reservation, cancel_reservation
 from app.services import email_notifications
+from app.models.enums import SpotType
 from app import models
 
 router = APIRouter(prefix="/reservations")
@@ -35,15 +36,28 @@ async def reserve(
         "number": spot.number,
         "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
     }
-    asyncio.create_task(
-        email_notifications.send_reservation_confirmation(
-            user["email"],
-            user.get("display_name", ""),
-            spot_dict,
-            day.strftime("%d.%m.%Y"),
-            shift.value
+
+    # Send appropriate confirmation email based on spot type
+    if spot.spot_type == SpotType.ASSIGNED:
+        asyncio.create_task(
+            email_notifications.send_assigned_spot_reservation_confirmation(
+                user["email"],
+                user.get("display_name", ""),
+                spot_dict,
+                day.strftime("%d.%m.%Y"),
+                shift.value
+            )
         )
-    )
+    else:
+        asyncio.create_task(
+            email_notifications.send_reservation_confirmation(
+                user["email"],
+                user.get("display_name", ""),
+                spot_dict,
+                day.strftime("%d.%m.%Y"),
+                shift.value
+            )
+        )
 
     return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
 
