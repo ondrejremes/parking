@@ -12,7 +12,7 @@ def should_send_email(email: str) -> bool:
 
 
 async def send_reservation_confirmation(user_email: str, user_name: str, spot: dict, date: str, shift: str):
-    """Potvrzení vytvoření rezervace"""
+    """Potvrzení vytvoření rezervace na sdílené místo"""
     if not should_send_email(user_email):
         logger.debug(f"Email {user_email} není na whitelistu, notifikace poslána není")
         return
@@ -50,7 +50,8 @@ async def send_reservation_confirmation(user_email: str, user_name: str, spot: d
                 </tr>
             </table>
 
-            <p>Pokud chcete rezervaci zrušit, můžete tak učinit v aplikaci minimálně 24 hodin před termínem.</p>
+            <p><strong>Pokud chcete rezervaci zrušit:</strong></p>
+            <p>Můžete tak učinit v aplikaci minimálně 24 hodin před termínem. Zrušením uvolníte místo pro ostatní zaměstnance.</p>
 
             <p style="margin-top: 30px;">
                 <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
@@ -71,7 +72,8 @@ vaše rezervace parkovacího místa byla úspěšně vytvořena.
 ⏰ Čas: {shift_name} ({shift_time})
 🚗 Typ: {spot.get('spot_type', 'Sdílené')}
 
-Pokud chcete rezervaci zrušit, můžete tak učinit v aplikaci minimálně 24 hodin před termínem.
+POKUD CHCETE REZERVACI ZRUŠIT:
+Můžete tak učinit v aplikaci minimálně 24 hodin před termínem. Zrušením uvolníte místo pro ostatní zaměstnance.
 
 Parkování App
 Alintrust"""
