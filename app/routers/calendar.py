@@ -94,7 +94,7 @@ async def calendar_month(
 
     spots = db.query(models.Spot).filter_by(active=True).order_by(models.Spot.floor, models.Spot.number).all()
     summary = get_month_summary(db, all_dates, user["id"], spots)
-    users = db.query(models.User).order_by(models.User.display_name).all()
+    users = db.query(models.User).filter_by(active=True).order_by(models.User.display_name).all()
 
     ctx = _base_ctx(request, user)
     ctx.update({
@@ -162,7 +162,7 @@ async def calendar_week(
             "can_add_guest": bool(day_data.get("guest_free_spots")) and d >= today and user.get("can_manage_guests", False),
         })
 
-    users = db.query(models.User).order_by(models.User.display_name).all()
+    users = db.query(models.User).filter_by(active=True).order_by(models.User.display_name).all()
 
     ctx = _base_ctx(request, user)
     ctx.update({
