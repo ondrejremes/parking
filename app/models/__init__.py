@@ -3,5 +3,7 @@ from app.models.spot import Spot
 from app.models.release import Release
 from app.models.reservation import Reservation
 from app.models.guest_parking import GuestParking
+from app.models.audit_log import AuditLog
+from app.models.security_event import SecurityEvent
 
-__all__ = ["User", "Spot", "Release", "Reservation", "GuestParking"]
+__all__ = ["User", "Spot", "Release", "Reservation", "GuestParking", "AuditLog", "SecurityEvent"]
