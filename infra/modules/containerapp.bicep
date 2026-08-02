@@ -9,6 +9,8 @@ param keyVaultId string
 param azureTenantId string
 param emailFrom string
 param reservationHorizonDays int
+param baseUrl string = 'https://parking.alintrust.cz'
+param azureRedirectUri string = '${baseUrl}/auth/callback'
 
 var envName = '${appName}-env'
 var appIdentityName = '${appName}-identity'
@@ -110,6 +112,8 @@ resource app 'Microsoft.App/containerApps@2023-11-02-preview' = {
             { name: 'ADMIN_PASSWORD_HASH',       secretRef: 'admin-password-hash' }
             { name: 'ACS_CONNECTION_STRING',     secretRef: 'acs-connection-str' }
             { name: 'AZURE_TENANT_ID',           value: azureTenantId }
+            { name: 'AZURE_REDIRECT_URI',        value: azureRedirectUri }
+            { name: 'BASE_URL',                  value: baseUrl }
             { name: 'EMAIL_FROM',                value: emailFrom }
             { name: 'RESERVATION_HORIZON_DAYS',  value: string(reservationHorizonDays) }
           ]
