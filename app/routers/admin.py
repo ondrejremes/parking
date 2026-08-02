@@ -411,6 +411,34 @@ async def register_entra_user(
     return RedirectResponse("/admin/users", status_code=303)
 
 
+@router.post("/users/{user_id}/toggle-active")
+async def toggle_active(
+    user_id: str,
+    request: Request,
+    csrf_token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    validate_csrf(request, csrf_token)
+    current_user = require_admin(request)
+    user = db.query(models.User).filter_by(id=user_id).first()
+    old_active = user.active
+    user.active = not user.active
+    db.commit()
+
+    log_action(
+        db=db,
+        admin_user_id=str(current_user["id"]),
+        action="user_active_toggled",
+        target_user_id=str(user.id),
+        target_resource="user",
+        old_value={"active": old_active},
+        new_value={"active": user.active},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    return RedirectResponse("/admin/users", status_code=303)
+
+
 # ── Security & Audit ──────────────────────────────────────────────────────────
 
 @router.get("/security/stats")

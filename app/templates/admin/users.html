@@ -16,6 +16,7 @@
             <th>Jméno</th>
             <th>E-mail</th>
             <th>Zdroj</th>
+            <th>Aktivní</th>
             <th>Admin</th>
             <th>Správa míst</th>
             <th>Rezervace hostů</th>
@@ -28,6 +29,16 @@
         <td>{{ u.display_name }}</td>
         <td>{{ u.email }}</td>
         <td>{{ 'SSO' if u.azure_oid else 'lokální' }}</td>
+
+        <td>
+            <form method="post" action="/admin/users/{{ u.id }}/toggle-active">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="role-btn {% if u.active %}role-on{% endif %}"
+                        title="{% if u.active %}Deaktivovat uživatele{% else %}Aktivovat uživatele{% endif %}">
+                    {{ '✓' if u.active else '✗' }}
+                </button>
+            </form>
+        </td>
 
         <td>
             <form method="post" action="/admin/users/{{ u.id }}/toggle-admin">
