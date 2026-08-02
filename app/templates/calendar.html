@@ -360,7 +360,7 @@ Místo: {{ floor_label(gp.spot.floor) }}/{{ gp.spot.number }}
                 <select name="contact_user_id" class="form-input">
                     <option value="">Vyberte kontaktní osobu...</option>
                     {% for u in all_users %}
-                    <option value="{{ u.id }}" {% if u.id == user.id %}selected{% endif %}>{{ u.display_name }}</option>
+                    <option value="{{ u.id }}" {% if u.id|string == user.id %}selected{% endif %}>{{ u.display_name }}</option>
                     {% endfor %}
                 </select>
             </div>
