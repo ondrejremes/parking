@@ -446,25 +446,36 @@ async def security_stats(request: Request, db: Session = Depends(get_db)):
     require_admin(request)
     from datetime import datetime, timedelta
 
-    last_24h = datetime.utcnow().replace(tzinfo=None) - timedelta(days=1)
+    try:
+        last_24h = datetime.utcnow().replace(tzinfo=None) - timedelta(days=1)
 
-    failed_logins = db.query(models.SecurityEvent).filter(
-        models.SecurityEvent.event_type == "failed_login",
-        models.SecurityEvent.created_at >= last_24h,
-    ).count()
+        failed_logins = db.query(models.SecurityEvent).filter(
+            models.SecurityEvent.event_type == "failed_login",
+            models.SecurityEvent.created_at >= last_24h,
+        ).count()
 
-    csrf_failures = db.query(models.SecurityEvent).filter(
-        models.SecurityEvent.event_type == "csrf_failure",
-        models.SecurityEvent.created_at >= last_24h,
-    ).count()
+        csrf_failures = db.query(models.SecurityEvent).filter(
+            models.SecurityEvent.event_type == "csrf_failure",
+            models.SecurityEvent.created_at >= last_24h,
+        ).count()
 
-    admin_actions = db.query(models.AuditLog).filter(
-        models.AuditLog.created_at >= last_24h,
-    ).count()
+        admin_actions = db.query(models.AuditLog).filter(
+            models.AuditLog.created_at >= last_24h,
+        ).count()
 
-    unique_ips = db.query(models.SecurityEvent.ip_address).filter(
-        models.SecurityEvent.created_at >= last_24h,
-    ).distinct().count()
+        unique_ips = db.query(models.SecurityEvent.ip_address).filter(
+            models.SecurityEvent.created_at >= last_24h,
+        ).distinct().count()
+    except Exception as e:
+        # Tables might not exist yet or migration pending
+        return JSONResponse({
+            "error": "Security tables not yet initialized",
+            "message": str(e),
+            "failed_logins_24h": 0,
+            "csrf_failures_24h": 0,
+            "admin_actions_24h": 0,
+            "unique_ips_24h": 0,
+        }, status_code=200)
 
     return JSONResponse({
         "failed_logins_24h": failed_logins,
