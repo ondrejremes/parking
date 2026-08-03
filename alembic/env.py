@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text, create_engine
 from alembic import context
 
 from app.config import DATABASE_URL
@@ -11,6 +11,23 @@ config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Check if we should compare types when running autogenerate
+# If alembic_version table doesn't exist, we're in auto-init mode and should compare
+try:
+    test_engine = create_engine(DATABASE_URL)
+    with test_engine.connect() as conn:
+        result = conn.execute(text(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'alembic_version')"
+        ))
+        alembic_version_exists = result.scalar()
+        if not alembic_version_exists:
+            # We're initializing, set compare_type to avoid issues
+            config.set_section_option("alembic", "compare_type", "false")
+    test_engine.dispose()
+except Exception:
+    # If we can't check, just continue
+    pass
 
 target_metadata = Base.metadata
 
