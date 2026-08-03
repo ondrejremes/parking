@@ -19,6 +19,7 @@ VALID_MIGRATIONS = [
     'f2e3d4c5b6a7',  # add_active_flag_to_users
     'g3h4i5j6k7l8',  # add_audit_and_security_logging
     'i5j6k7l8m9n0',  # fix_migration_chain
+    'j6k7l8m9n0o1',  # add_soc_user
 ]
 
 try:
