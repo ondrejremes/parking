@@ -14,4 +14,4 @@ RUN chown -R app:app /app
 
 USER app
 
-CMD ["sh", "-c", "python fix_migration.py && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "set -e; echo 'Fixing migrations...'; python fix_migration.py || true; echo 'Running alembic...'; alembic upgrade head; echo 'Starting app...'; uvicorn app.main:app --host 0.0.0.0 --port 8000"]
