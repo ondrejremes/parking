@@ -43,8 +43,10 @@ def _send(to: str, subject: str, body: str):
     from azure.communication.email import EmailClient
 
     client = EmailClient.from_connection_string(ACS_CONNECTION_STRING)
-    client.begin_send({
+    poller = client.begin_send({
         "senderAddress": EMAIL_FROM,
         "recipients": {"to": [{"address": to}]},
         "content": {"subject": subject, "plainText": body},
     })
+    result = poller.result()
+    print(f"Email sent to {to}: {result.message_id}")
