@@ -9,7 +9,7 @@ try:
     GIT_COMMIT = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=os.path.dirname(os.path.dirname(__file__))).decode().strip()
     APP_VERSION = f"v1.10.5+{GIT_COMMIT}"
 except:
-    APP_VERSION = "v1.10.5"
+    APP_VERSION = "v1.10.6"
 
 _DB_URL = os.getenv("DATABASE_URL")
 _SESSION_SECRET = os.getenv("SESSION_SECRET")

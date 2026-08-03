@@ -30,39 +30,43 @@ async def reserve(
 
     spot = db.query(models.Spot).filter_by(id=spot_id).first()
 
-    # Send confirmation email (async, don't wait)
+    # Send confirmation email synchronously (blocking) to ensure delivery
     spot_dict = {
         "floor": spot.floor,
         "number": spot.number,
         "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
     }
 
-    # Log that we're sending email
     import logging
     logger = logging.getLogger(__name__)
     logger.info(f"📧 Attempting to send confirmation email to {user['email']}")
 
     # Send appropriate confirmation email based on spot type
-    if spot.spot_type == SpotType.ASSIGNED:
-        asyncio.create_task(
-            email_notifications.send_assigned_spot_reservation_confirmation(
-                user["email"],
-                user.get("display_name", ""),
-                spot_dict,
-                day.strftime("%d.%m.%Y"),
-                shift.value
+    # Using asyncio.run() to run async email functions synchronously in the request context
+    try:
+        if spot.spot_type == SpotType.ASSIGNED:
+            asyncio.run(
+                email_notifications.send_assigned_spot_reservation_confirmation(
+                    user["email"],
+                    user.get("display_name", ""),
+                    spot_dict,
+                    day.strftime("%d.%m.%Y"),
+                    shift.value
+                )
             )
-        )
-    else:
-        asyncio.create_task(
-            email_notifications.send_reservation_confirmation(
-                user["email"],
-                user.get("display_name", ""),
-                spot_dict,
-                day.strftime("%d.%m.%Y"),
-                shift.value
+        else:
+            asyncio.run(
+                email_notifications.send_reservation_confirmation(
+                    user["email"],
+                    user.get("display_name", ""),
+                    spot_dict,
+                    day.strftime("%d.%m.%Y"),
+                    shift.value
+                )
             )
-        )
+        logger.info(f"✅ Confirmation email successfully sent to {user['email']}")
+    except Exception as e:
+        logger.error(f"❌ Failed to send confirmation email to {user['email']}: {e}", exc_info=True)
 
     return RedirectResponse(f"/calendar?month={day.strftime('%Y-%m')}", status_code=303)
 
@@ -84,21 +88,25 @@ async def cancel(
 
     cancel_reservation(db, reservation_id=reservation_id, user_id=user["id"])
 
-    # Send cancellation email (async, don't wait)
+    # Send cancellation email synchronously (blocking) to ensure delivery
     if reservation and spot:
         spot_dict = {
             "floor": spot.floor,
             "number": spot.number,
             "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
         }
-        asyncio.create_task(
-            email_notifications.send_reservation_cancellation(
-                user["email"],
-                user.get("display_name", ""),
-                spot_dict,
-                reservation.date.strftime("%d.%m.%Y"),
-                reservation.shift.value
+        try:
+            asyncio.run(
+                email_notifications.send_reservation_cancellation(
+                    user["email"],
+                    user.get("display_name", ""),
+                    spot_dict,
+                    reservation.date.strftime("%d.%m.%Y"),
+                    reservation.shift.value
+                )
             )
-        )
+            logger.info(f"✅ Cancellation email successfully sent to {user['email']}")
+        except Exception as e:
+            logger.error(f"❌ Failed to send cancellation email to {user['email']}: {e}", exc_info=True)
 
     return RedirectResponse("/calendar", status_code=303)

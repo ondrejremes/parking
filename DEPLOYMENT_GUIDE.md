@@ -249,9 +249,9 @@ https://parking.alintrust.cz/admin/users → 🔄 Načíst uživatele
 
 Deployment credentials v `deploy.env`:
 ```bash
-AZURE_CLIENT_ID=79cf4be9-c67d-4d18-aaa1-dd1a2b0e7e7c
-AZURE_CLIENT_SECRET=UwU8Q~rNwsL.GGNnwx4GBWp_s8TUStdzu6AyAb9b
-AZURE_TENANT_ID=d15176d7-e40c-4cae-bff5-11d57e820fbd
+AZURE_CLIENT_ID=<your-client-id>
+AZURE_CLIENT_SECRET=<your-client-secret>
+AZURE_TENANT_ID=<your-tenant-id>
 ```
 
 Azure Details:
