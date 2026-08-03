@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import asyncio
+import logging
 
 from app.database import get_db
 from app.models.enums import Shift
@@ -11,6 +12,8 @@ from app.services.booking import create_reservation, cancel_reservation
 from app.services import email_notifications
 from app.models.enums import SpotType
 from app import models
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reservations")
 
