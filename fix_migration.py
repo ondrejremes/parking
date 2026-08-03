@@ -35,6 +35,12 @@ try:
             print("ℹ️  alembic_version table doesn't exist - alembic will create it")
             exit(0)
 
+        # Check if users table exists
+        result = conn.execute(text(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users')"
+        ))
+        users_exists = result.scalar()
+
         # Get current migrations
         result = conn.execute(text("SELECT version_num FROM alembic_version ORDER BY version_num"))
         current = [v[0] for v in result.fetchall()]
@@ -43,7 +49,16 @@ try:
         for v in current:
             print(f"  - {v}")
 
-        # Remove any invalid migrations (h4i5j6k7l8m9)
+        # If users table exists but alembic_version is empty, initialize it
+        if users_exists and len(current) == 0:
+            print("\n⚠️  users table exists but alembic_version is empty - initializing...")
+            for migration in VALID_MIGRATIONS:
+                conn.execute(text(f"INSERT INTO alembic_version (version_num) VALUES ('{migration}')"))
+                print(f"  ✓ {migration}")
+            print("✅ Initialized alembic_version with all migrations")
+            exit(0)
+
+        # Remove any invalid migrations
         invalid = [v for v in current if v not in VALID_MIGRATIONS]
         if invalid:
             print(f"\nRemoving {len(invalid)} invalid migration(s):")
@@ -52,17 +67,17 @@ try:
                 conn.execute(text(f"DELETE FROM alembic_version WHERE version_num = '{v}'"))
 
         # Check if we're at the latest valid migration
-        result = conn.execute(text("SELECT version_num FROM alembic_version ORDER BY version_num DESC LIMIT 1"))
-        last = result.scalar()
-        expected_last = VALID_MIGRATIONS[-1]
+        if current:
+            result = conn.execute(text("SELECT version_num FROM alembic_version ORDER BY version_num DESC LIMIT 1"))
+            last = result.scalar()
+            expected_last = VALID_MIGRATIONS[-1]
 
-        if last == expected_last:
-            print(f"\n✅ Database is up to date at {last}")
-        else:
-            print(f"\n⚠️  Database is at {last}, expected {expected_last}")
-            print("Alembic will handle remaining migrations")
+            if last == expected_last:
+                print(f"\n✅ Database is up to date at {last}")
+            else:
+                print(f"\n⚠️  Database is at {last}, expected {expected_last}")
+                print("Alembic will handle remaining migrations")
 
 except Exception as e:
     print(f"⚠️  Warning: {e}")
-    # Don't fail - let alembic handle it
     exit(0)
