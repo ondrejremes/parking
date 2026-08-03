@@ -19,12 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema - add SOC local user."""
-    op.execute(f"""
-        INSERT INTO users (id, azure_oid, email, display_name, is_admin, can_manage_guests, can_manage_spots, can_view_reports, password_hash, active)
-        VALUES
-            ('{uuid4()}', NULL, NULL, 'SOC', false, false, false, false, NULL, true)
-        ON CONFLICT (display_name) DO NOTHING
-    """)
+    connection = op.get_bind()
+    from sqlalchemy import text
+
+    # Check if SOC user already exists
+    result = connection.execute(text("SELECT COUNT(*) FROM users WHERE display_name = 'SOC' AND azure_oid IS NULL"))
+    exists = result.scalar() > 0
+
+    if not exists:
+        op.execute(f"""
+            INSERT INTO users (id, azure_oid, email, display_name, is_admin, can_manage_guests, can_manage_spots, can_view_reports, password_hash, active)
+            VALUES
+                ('{uuid4()}', NULL, NULL, 'SOC', false, false, false, false, NULL, true)
+        """)
 
 
 def downgrade() -> None:
