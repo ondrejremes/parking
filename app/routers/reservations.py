@@ -16,7 +16,7 @@ router = APIRouter(prefix="/reservations")
 
 
 @router.post("/")
-async def reserve(
+def reserve(
     request: Request,
     spot_id: str = Form(...),
     day: date = Form(...),
@@ -72,7 +72,7 @@ async def reserve(
 
 
 @router.post("/{reservation_id}/cancel")
-async def cancel(
+def cancel(
     reservation_id: str,
     request: Request,
     csrf_token: str = Form(...),
