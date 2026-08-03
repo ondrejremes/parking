@@ -617,3 +617,155 @@ Parkování App
 Alintrust"""
 
     await _send_email(contact_email, subject, html_content, plain_text)
+
+
+async def send_guest_parking_cancellation(sponsor_email: str, sponsor_name: str, guest_name: str, guest_plate: str,
+                                          guest_company: str, spot: dict, date: str,
+                                          time_from: str, time_to: str):
+    """Notifikace zrušení rezervace pro hosta - odesíláno na sponsora"""
+    if not should_send_email(sponsor_email):
+        logger.debug(f"Email {sponsor_email} není na whitelistu, notifikace poslána není")
+        return
+
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
+
+    safe_guest_name = escape(guest_name)
+    safe_guest_plate = escape(guest_plate or "neuvedeno")
+    safe_guest_company = escape(guest_company or "neuvedeno")
+
+    subject = "Zrušení rezervace parkovacího místa pro hosta"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den,</p>
+            <p>rezervace parkovacího místa pro hosta byla zrušena.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>👤 Host:</strong></td>
+                    <td style="padding: 8px;">{safe_guest_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>🚗 SPZ:</strong></td>
+                    <td style="padding: 8px;">{safe_guest_plate}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>🏢 Firma / poznámka:</strong></td>
+                    <td style="padding: 8px;">{safe_guest_company}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{time_from} – {time_to}</td>
+                </tr>
+            </table>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den,
+
+rezervace parkovacího místa pro hosta byla zrušena.
+
+👤 Host: {safe_guest_name}
+🚗 SPZ: {safe_guest_plate}
+🏢 Firma / poznámka: {safe_guest_company}
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {time_from} – {time_to}
+
+Parkování App
+Alintrust"""
+
+    await _send_email(sponsor_email, subject, html_content, plain_text)
+
+
+async def send_guest_parking_contact_cancellation(contact_email: str, contact_name: str, sponsor_name: str,
+                                                   guest_name: str, guest_plate: str, guest_company: str,
+                                                   spot: dict, date: str, time_from: str, time_to: str):
+    """Notifikace zrušení rezervace pro hosta - odesíláno na kontakt"""
+    if not should_send_email(contact_email):
+        logger.debug(f"Email {contact_email} není na whitelistu, notifikace poslána není")
+        return
+
+    from datetime import datetime as dt
+    date_obj = dt.strptime(date, "%d.%m.%Y")
+    calendar_url = f"{BASE_URL}/calendar/week?week={date_obj.isoformat()}"
+
+    safe_guest_name = escape(guest_name)
+    safe_guest_plate = escape(guest_plate or "neuvedeno")
+    safe_guest_company = escape(guest_company or "neuvedeno")
+    safe_sponsor_name = escape(sponsor_name or "neuvedeno")
+
+    subject = "Notifikace: Zrušení rezervace parkovacího místa pro hosta"
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif;">
+            <p>Dobrý den {escape(contact_name) or ""},</p>
+            <p>rezervace parkovacího místa pro hosta byla zrušena. Níže naleznete podrobnosti.</p>
+
+            <table style="border-collapse: collapse; margin: 20px 0;">
+                <tr>
+                    <td style="padding: 8px;"><strong>👤 Host:</strong></td>
+                    <td style="padding: 8px;">{safe_guest_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>🚗 SPZ:</strong></td>
+                    <td style="padding: 8px;">{safe_guest_plate}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>🏢 Firma / poznámka:</strong></td>
+                    <td style="padding: 8px;">{safe_guest_company}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>👤 Zadavatel:</strong></td>
+                    <td style="padding: 8px;">{safe_sponsor_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📍 Místo:</strong></td>
+                    <td style="padding: 8px;">Patro {spot.get('floor')}, Místo {spot.get('number')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>📅 Datum:</strong></td>
+                    <td style="padding: 8px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>⏰ Čas:</strong></td>
+                    <td style="padding: 8px;">{time_from} – {time_to}</td>
+                </tr>
+            </table>
+
+            <hr style="margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">Parkování App | Alintrust</p>
+        </body>
+    </html>
+    """
+
+    plain_text = f"""Dobrý den {escape(contact_name) or ""},
+
+rezervace parkovacího místa pro hosta byla zrušena. Níže naleznete podrobnosti.
+
+👤 Host: {safe_guest_name}
+🚗 SPZ: {safe_guest_plate}
+🏢 Firma / poznámka: {safe_guest_company}
+👤 Zadavatel: {safe_sponsor_name}
+📍 Parkovací místo: Patro {spot.get('floor')}, Místo {spot.get('number')}
+📅 Datum: {date}
+⏰ Čas: {time_from} – {time_to}
+
+Parkování App
+Alintrust"""
+
+    await _send_email(contact_email, subject, html_content, plain_text)
