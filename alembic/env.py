@@ -4,7 +4,13 @@ from alembic import context
 
 from app.config import DATABASE_URL
 from app.database import Base
-import app.models  # noqa: F401 — ensure all models are registered
+
+# Try to import models but ignore errors (they might trigger migrations)
+try:
+    import app.models  # noqa: F401 — ensure all models are registered
+except Exception as e:
+    import sys
+    print(f"⚠️  Warning loading models: {e}", file=sys.stderr)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
