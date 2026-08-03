@@ -70,6 +70,9 @@ app.include_router(reporting.router)
 @app.on_event("startup")
 async def startup_event():
     """Inicializuj background scheduler"""
+    print("🔧 [STARTUP] Initializing background scheduler...")
+    logger.info("🔧 [STARTUP] Initializing background scheduler...")
+
     scheduler = BackgroundScheduler()
 
     # Reminder emails - každý den v 19:00 (Czech time)
@@ -82,7 +85,8 @@ async def startup_event():
     )
 
     scheduler.start()
-    logger.info("✅ Background scheduler spuštěn (19:00 Europe/Prague)")
+    print("✅ [STARTUP] Background scheduler started successfully")
+    logger.info("✅ [STARTUP] Background scheduler started successfully")
 
 
 @app.get("/")

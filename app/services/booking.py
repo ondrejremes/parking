@@ -2,10 +2,12 @@ from datetime import date, datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
+import logging
 from app import models
 from app.models.enums import Shift, SpotType, ReleaseType
 from app.services.availability import _shifts_conflict
 
+logger = logging.getLogger(__name__)
 
 def create_reservation(
     db: Session,
@@ -14,8 +16,10 @@ def create_reservation(
     day: date,
     shift: Shift,
 ) -> models.Reservation:
+    logger.info(f"🎫 Creating reservation: spot={spot_id}, user={user_id}, date={day}, shift={shift}")
     spot = db.query(models.Spot).filter_by(id=spot_id, active=True).first()
     if not spot:
+        logger.warning(f"❌ Spot not found: {spot_id}")
         raise HTTPException(status_code=404, detail="Spot not found")
 
     _assert_bookable(db, spot, day, shift, user_id)
