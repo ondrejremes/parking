@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fix database migration state."""
 import os
+import subprocess
 from sqlalchemy import create_engine, text
 
 database_url = os.getenv("DATABASE_URL")
@@ -80,4 +81,21 @@ try:
 
 except Exception as e:
     print(f"⚠️  Warning: {e}")
-    exit(0)
+
+# Try to run alembic upgrade head
+print("\nRunning alembic migrations...")
+try:
+    result = subprocess.run(["alembic", "upgrade", "head"], check=True, capture_output=True, text=True)
+    print("✅ Alembic migrations completed")
+except subprocess.CalledProcessError as e:
+    if "DuplicateTable" in e.stderr or "already exists" in e.stderr:
+        print("⚠️  Tables already exist, stamping current head...")
+        try:
+            subprocess.run(["alembic", "stamp", "head"], check=True, capture_output=True, text=True)
+            print("✅ Stamped alembic to current head")
+        except subprocess.CalledProcessError as e2:
+            print(f"❌ Failed to stamp head: {e2.stderr}")
+            exit(1)
+    else:
+        print(f"❌ Alembic migration failed: {e.stderr}")
+        exit(1)
