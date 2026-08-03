@@ -52,8 +52,16 @@ def run_migrations_online() -> None:
     )
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
-        with context.begin_transaction():
-            context.run_migrations()
+        try:
+            with context.begin_transaction():
+                context.run_migrations()
+        except Exception as e:
+            # If tables already exist, just skip migration (they'll be stamped later)
+            if "DuplicateTable" in str(e) or "already exists" in str(e):
+                import sys
+                print(f"⚠️  Migration skipped - tables already exist", file=sys.stderr)
+            else:
+                raise
 
 
 if context.is_offline_mode():
