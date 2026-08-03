@@ -171,9 +171,9 @@ docker run --rm \
   -w /workspace \
   mcr.microsoft.com/azure-cli:latest \
   bash -c "
-    az login --service-principal -u \$AZURE_CLIENT_ID -p \$AZURE_CLIENT_SECRET --tenant d15176d7-e40c-4cae-bff5-11d57e820fbd > /dev/null 2>&1
-    az account set --subscription 2ae6e588-ab90-4994-a6f9-542500cba224 > /dev/null 2>&1
-    az acr build -r parkingcr --image 'parking:latest' .
+    az login --service-principal -u \$AZURE_CLIENT_ID -p \$AZURE_CLIENT_SECRET --tenant \$AZURE_TENANT_ID > /dev/null 2>&1
+    az account set --subscription \$SUBSCRIPTION_ID > /dev/null 2>&1
+    az acr build -r \$ACR_NAME --image 'parking:latest' .
   "
 ```
 
@@ -218,9 +218,9 @@ docker run --rm \
   -w /workspace \
   mcr.microsoft.com/azure-cli:latest \
   bash -c "
-    az login --service-principal -u \$AZURE_CLIENT_ID -p \$AZURE_CLIENT_SECRET --tenant d15176d7-e40c-4cae-bff5-11d57e820fbd > /dev/null 2>&1
-    az account set --subscription 2ae6e588-ab90-4994-a6f9-542500cba224 > /dev/null 2>&1
-    az acr build -r parkingcr --image 'parking:latest' .
+    az login --service-principal -u \$AZURE_CLIENT_ID -p \$AZURE_CLIENT_SECRET --tenant \$AZURE_TENANT_ID > /dev/null 2>&1
+    az account set --subscription \$SUBSCRIPTION_ID > /dev/null 2>&1
+    az acr build -r \$ACR_NAME --image 'parking:latest' .
   "
 ```
 
@@ -247,7 +247,7 @@ https://parking.alintrust.cz/admin/users → 🔄 Načíst uživatele
 
 ## 🔧 Config
 
-Deployment credentials v `deploy.env`:
+Deployment credentials in `deploy.env` (store securely):
 ```bash
 AZURE_CLIENT_ID=<your-client-id>
 AZURE_CLIENT_SECRET=<your-client-secret>
@@ -256,11 +256,11 @@ AZURE_TENANT_ID=<your-tenant-id>
 
 Azure Details:
 ```
-Subscription: 2ae6e588-ab90-4994-a6f9-542500cba224
-Resource Group: Parking
-Container Registry: parkingcr (parkingcr.azurecr.io)
-Container App: parking-app
-Region: germanywestcentral
+Subscription: <your-subscription-id>
+Resource Group: <your-resource-group>
+Container Registry: <your-registry-name>
+Container App: <your-container-app-name>
+Region: <your-region>
 ```
 
 ---
