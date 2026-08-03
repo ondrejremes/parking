@@ -126,12 +126,15 @@ async def create(
 
 
 @router.post("/{gp_id}/cancel")
-async def cancel(
+def cancel(
     gp_id: str,
     request: Request,
     csrf_token: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    import asyncio
+    from app.services import email_notifications
+
     validate_csrf(request, csrf_token)
     user = get_current_user(request)
 
@@ -139,6 +142,49 @@ async def cancel(
     if not gp or str(gp.created_by_user_id) != str(user["id"]) or gp.cancelled_at:
         return RedirectResponse("/calendar", status_code=303)
 
+    # Get spot and contact details before cancellation
+    spot = db.query(models.Spot).filter_by(id=gp.spot_id).first()
+    contact_user = db.query(models.User).filter_by(id=gp.contact_user_id).first()
+
     gp.cancelled_at = datetime.now(timezone.utc)
     db.commit()
+
+    # Send cancellation emails
+    if spot and gp.created_by_user_id and gp.contact_user_id:
+        sponsor = db.query(models.User).filter_by(id=gp.created_by_user_id).first()
+        spot_dict = {
+            "floor": spot.floor,
+            "number": spot.number,
+            "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
+        }
+        try:
+            # Email to sponsor
+            asyncio.run(email_notifications.send_guest_parking_cancellation(
+                sponsor.email if sponsor else user["email"],
+                sponsor.display_name if sponsor else user.get("display_name", ""),
+                gp.guest_name,
+                gp.guest_plate,
+                gp.guest_company,
+                spot_dict,
+                gp.date.strftime("%d.%m.%Y"),
+                gp.time_from.strftime("%H:%M") if gp.time_from else "",
+                gp.time_to.strftime("%H:%M") if gp.time_to else ""
+            ))
+            # Email to contact
+            if contact_user:
+                asyncio.run(email_notifications.send_guest_parking_contact_cancellation(
+                    contact_user.email,
+                    contact_user.display_name or "",
+                    sponsor.display_name if sponsor else "",
+                    gp.guest_name,
+                    gp.guest_plate,
+                    gp.guest_company,
+                    spot_dict,
+                    gp.date.strftime("%d.%m.%Y"),
+                    gp.time_from.strftime("%H:%M") if gp.time_from else "",
+                    gp.time_to.strftime("%H:%M") if gp.time_to else ""
+                ))
+        except Exception as e:
+            logger.error(f"❌ Failed to send guest parking cancellation emails: {e}", exc_info=True)
+
     return RedirectResponse(f"/calendar?month={gp.date.strftime('%Y-%m')}", status_code=303)
