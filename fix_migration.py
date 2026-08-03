@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Fix database migration state."""
 import os
-import subprocess
 import sys
 from sqlalchemy import create_engine, text
 
@@ -36,8 +35,7 @@ try:
         table_exists = result.scalar()
 
         if not table_exists:
-            print("ℹ️  alembic_version table doesn't exist - will be created by alembic")
-            need_upgrade = True
+            print("ℹ️  alembic_version table doesn't exist yet")
         else:
             # Get current migrations
             result = conn.execute(text("SELECT version_num FROM alembic_version ORDER BY version_num"))
@@ -58,54 +56,18 @@ try:
                         conn.execute(text(f"INSERT INTO alembic_version (version_num) VALUES ('{migration}')"))
                         print(f"  ✓ {migration}")
                     print("✅ Initialized alembic_version with all migrations")
-                    need_upgrade = False
                 else:
-                    print("alembic_version is empty and users table doesn't exist - alembic will initialize")
-                    need_upgrade = True
+                    print("⚠️  alembic_version is empty and users table doesn't exist")
             else:
                 # Check if we're at the latest migration
                 last = current[-1]
                 expected = VALID_MIGRATIONS[-1]
                 if last == expected:
                     print(f"✅ Database is at latest migration: {last}")
-                    need_upgrade = False
                 else:
-                    print(f"Database at {last}, expected {expected} - will upgrade")
-                    need_upgrade = True
+                    print(f"⚠️  Database at {last}, expected {expected}")
 
 except Exception as e:
     print(f"⚠️  Could not check migration state: {e}")
-    need_upgrade = True
-
-# Only run alembic upgrade if needed
-if need_upgrade:
-    print("\nRunning alembic upgrade...")
-    try:
-        result = subprocess.run(
-            ["alembic", "upgrade", "head"],
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
-
-        if result.returncode == 0:
-            print("✅ Alembic migrations completed successfully")
-        else:
-            stderr = result.stderr
-            # If error is about tables already existing, that's OK - just continue
-            if "DuplicateTable" in stderr or "already exists" in stderr:
-                print("⚠️  Tables already exist - this is expected on restart")
-            else:
-                print(f"❌ Alembic upgrade failed: {stderr}")
-                sys.exit(1)
-
-    except subprocess.TimeoutExpired:
-        print("❌ Alembic migration timed out")
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error running migrations: {e}")
-        sys.exit(1)
-else:
-    print("✅ No migrations needed")
 
 print("✅ Migration check complete")
