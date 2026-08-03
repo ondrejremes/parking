@@ -37,6 +37,11 @@ async def reserve(
         "spot_type": spot.spot_type.value if spot.spot_type else "Sdílené"
     }
 
+    # Log that we're sending email
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"📧 Attempting to send confirmation email to {user['email']}")
+
     # Send appropriate confirmation email based on spot type
     if spot.spot_type == SpotType.ASSIGNED:
         asyncio.create_task(
