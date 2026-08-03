@@ -14,4 +14,4 @@ RUN chown -R app:app /app
 
 USER app
 
-CMD ["sh", "-c", "echo 'Fixing migrations...'; python fix_migration.py || true; echo 'Starting app...'; exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "echo 'Starting app...'; exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
