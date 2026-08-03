@@ -63,7 +63,24 @@ nav a:hover { color: #fff; }
     margin: 0 .5rem;
 }
 
-main { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+main {
+  max-width: 90%;
+  width: 100%;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 1201px) {
+  main { max-width: 1380px; }
+}
+
+@media (min-width: 1601px) {
+  main { max-width: 1500px; padding: 0 2rem; }
+}
+
+@media (min-width: 1921px) {
+  main { max-width: 1600px; padding: 0 3rem; }
+}
 
 .btn { display: inline-block; padding: .4rem .9rem; border-radius: 4px; border: none; cursor: pointer; font-size: .875rem; text-decoration: none; }
 .btn-primary { background: #4B2D8F; color: #fff; }

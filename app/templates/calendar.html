@@ -8,6 +8,16 @@
     }
     .week-nav h2 { font-size: 1rem; font-weight: 700; flex: 1; }
 
+    @media (min-width: 1601px) {
+        .week-nav { gap: 1rem; margin-bottom: 1.5rem; }
+        .week-nav h2 { font-size: 1.1rem; }
+    }
+
+    @media (min-width: 1921px) {
+        .week-nav { gap: 1.25rem; margin-bottom: 1.75rem; }
+        .week-nav h2 { font-size: 1.2rem; }
+    }
+
     .day-card {
         background: #fff; border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,.08);
@@ -15,7 +25,8 @@
         flex-shrink: 0;
     }
 
-    @media (min-width: 901px) {
+    /* Wide screens: 7 columns (original behavior) */
+    @media (min-width: 1201px) {
         .day-card {
             margin-bottom: .75rem;
             flex: 1 1 calc(14.28% - 0.75rem);
@@ -23,6 +34,34 @@
         }
     }
 
+    /* Extra wide screens: more compact, better use of space */
+    @media (min-width: 1601px) {
+        .day-card {
+            margin-bottom: .75rem;
+            flex: 1 1 calc(14.28% - 0.75rem);
+            min-width: 140px;
+        }
+    }
+
+    /* 4K+ screens: bigger cards */
+    @media (min-width: 1921px) {
+        .day-card {
+            margin-bottom: 1rem;
+            flex: 1 1 calc(14.28% - 1rem);
+            min-width: 160px;
+        }
+    }
+
+    /* Tablets: 2 columns */
+    @media (min-width: 901px) and (max-width: 1200px) {
+        .day-card {
+            flex: 1 1 calc(50% - 0.375rem);
+            min-width: 150px;
+            margin-bottom: .75rem;
+        }
+    }
+
+    /* Mobile: horizontal scroll */
     @media (max-width: 900px) {
         .day-card {
             flex: 1 1 calc(50% - 0.375rem);
@@ -34,6 +73,18 @@
         gap: .75rem; border-bottom: 1px solid #f0f0f0;
         background: #fafafa;
     }
+
+    @media (min-width: 1601px) {
+        .day-header {
+            padding: .65rem 1.1rem;
+        }
+    }
+
+    @media (min-width: 1921px) {
+        .day-header {
+            padding: .75rem 1.25rem;
+        }
+    }
     .day-header.today { background: #f5f0ff; border-bottom-color: #e9d5ff; }
     .day-header.past  { opacity: .6; }
     .day-name  { font-weight: 700; font-size: .9rem; color: #1a1a1a; }
@@ -43,6 +94,14 @@
     }
 
     .day-body { padding: .6rem 1rem; overflow: visible; }
+
+    @media (min-width: 1601px) {
+        .day-body { padding: .7rem 1.1rem; }
+    }
+
+    @media (min-width: 1921px) {
+        .day-body { padding: .8rem 1.25rem; }
+    }
 
     .btn-guest {
         display: block !important; width: auto; margin-top: .35rem;
@@ -56,6 +115,18 @@
     .res-row:last-child { border-bottom: none; }
     .res-spot  { font-weight: 700; font-size: .85rem; min-width: 70px; }
     .res-period { flex: 1; font-size: .82rem; }
+
+    @media (min-width: 1601px) {
+        .res-row { gap: .75rem; padding: .55rem 0; }
+        .res-spot { font-size: .87rem; min-width: 75px; }
+        .res-period { font-size: .84rem; }
+    }
+
+    @media (min-width: 1921px) {
+        .res-row { gap: .85rem; padding: .65rem 0; }
+        .res-spot { font-size: .9rem; min-width: 80px; }
+        .res-period { font-size: .86rem; }
+    }
 
     .badge {
         display: inline-block; font-size: .72rem; padding: .2rem .5rem;
@@ -152,11 +223,33 @@
     }
     .form-input:focus { outline: none; border-color: #4B2D8F; }
 
+    /* Container pro horizontální scroll na mobile */
+    .week-container {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
     @media (max-width: 900px) {
-        .day-card { margin-right: .5rem; flex-shrink: 0; min-width: calc(100vw - 3rem); }
-        .week-nav { overflow-x: auto; padding-bottom: .5rem; }
-        .week-nav { display: flex; gap: .5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .day-card:last-child { margin-right: 0; }
+        .week-container {
+            gap: 0.5rem;
+            padding-bottom: 0.75rem;
+        }
+        .day-card {
+            flex-shrink: 0;
+            min-width: calc(100vw - 3rem);
+            margin-bottom: 0;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .day-card {
+            min-width: calc(100vw - 2.5rem);
+        }
     }
 
     @media (max-width: 500px) {
@@ -164,6 +257,7 @@
         .res-spot { min-width: 55px; font-size: .78rem; }
         .btn-cancel, .btn-release, .btn-reserve { font-size: .72rem; padding: .25rem .5rem; }
         .day-card { min-width: calc(100vw - 2rem); }
+        .week-container { gap: 0.4rem; }
     }
 </style>
 
@@ -177,8 +271,7 @@
     <a href="/calendar?month={{ back_url.split('month=')[1] if 'month=' in back_url else '' }}" class="btn btn-secondary" style="margin-left: auto;">Měsíc</a>
 </div>
 
-<div style="display: flex; flex-wrap: wrap; gap: 0.75rem; padding-bottom: 0.5rem;">
-
+<div class="week-container">
 {% for day in days %}
 <div class="day-card">
     <div class="day-header{% if day.is_today %} today{% elif day.is_past %} past{% endif %}">
