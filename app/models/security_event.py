@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import String, DateTime, func, ForeignKey, Column
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
 
@@ -17,7 +17,6 @@ class SecurityEvent(Base):
     user_agent = Column(String(500), nullable=True)
     severity = Column(String(20), nullable=False)
     message = Column(String(500), nullable=False)
-    context = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", foreign_keys=[user_id])
