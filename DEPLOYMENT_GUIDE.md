@@ -252,6 +252,8 @@ Deployment credentials in `deploy.env` (store securely):
 AZURE_CLIENT_ID=<your-client-id>
 AZURE_CLIENT_SECRET=<your-client-secret>
 AZURE_TENANT_ID=<your-tenant-id>
+GH_TOKEN=<your-github-token>
+GH_REPO_URL=https://github.com/<owner>/<repo>
 ```
 
 Azure Details:
@@ -261,6 +263,13 @@ Resource Group: <your-resource-group>
 Container Registry: <your-registry-name>
 Container App: <your-container-app-name>
 Region: <your-region>
+```
+
+GitHub Push:
+```bash
+source deploy.env
+git remote set-url origin "https://${GH_TOKEN}@github.com/ondrejremes/parking.git"
+git push -u origin main
 ```
 
 ---
