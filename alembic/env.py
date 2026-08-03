@@ -45,18 +45,31 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    from sqlalchemy import inspect
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
+
+    # Check if users table already exists - if so, skip migrations
+    inspector = inspect(connectable)
+    existing_tables = inspector.get_table_names()
+
+    if 'users' in existing_tables:
+        # Tables already exist, don't try to run migrations
+        import sys
+        print("⚠️  Tables already exist - skipping migration", file=sys.stderr)
+        return
+
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         try:
             with context.begin_transaction():
                 context.run_migrations()
         except Exception as e:
-            # If tables already exist, just skip migration (they'll be stamped later)
+            # If tables already exist, just skip migration
             if "DuplicateTable" in str(e) or "already exists" in str(e):
                 import sys
                 print(f"⚠️  Migration skipped - tables already exist", file=sys.stderr)
