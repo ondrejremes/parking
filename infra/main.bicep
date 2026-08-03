@@ -13,7 +13,7 @@ param containerImage string
 param customDomain string = ''
 
 param azureTenantId string
-param emailFrom string = 'parking@alintrust.cz'
+param emailFrom string = 'DoNotReply@alintrust.cz'
 param reservationHorizonDays int = 31
 
 @secure()
