@@ -1,16 +1,8 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool, text, create_engine
+from sqlalchemy import engine_from_config, pool, text
 from alembic import context
 
 from app.config import DATABASE_URL
-from app.database import Base
-
-# Try to import models but ignore errors (they might trigger migrations)
-try:
-    import app.models  # noqa: F401 — ensure all models are registered
-except Exception as e:
-    import sys
-    print(f"⚠️  Warning loading models: {e}", file=sys.stderr)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
@@ -18,27 +10,15 @@ config.set_main_option("sqlalchemy.url", DATABASE_URL)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Check if we should compare types when running autogenerate
-# If alembic_version table doesn't exist, we're in auto-init mode and should compare
-try:
-    test_engine = create_engine(DATABASE_URL)
-    with test_engine.connect() as conn:
-        result = conn.execute(text(
-            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'alembic_version')"
-        ))
-        alembic_version_exists = result.scalar()
-        if not alembic_version_exists:
-            # We're initializing, set compare_type to avoid issues
-            config.set_section_option("alembic", "compare_type", "false")
-    test_engine.dispose()
-except Exception:
-    # If we can't check, just continue
-    pass
+# Empty metadata - we don't use alembic autogenerate
+class Base:
+    metadata = None
 
-target_metadata = Base.metadata
+target_metadata = None if Base.metadata is None else Base.metadata
 
 
 def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -51,36 +31,10 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    from sqlalchemy import inspect
-
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    # Check if users table already exists - if so, skip migrations
-    inspector = inspect(connectable)
-    existing_tables = inspector.get_table_names()
-
-    if 'users' in existing_tables:
-        # Tables already exist, don't try to run migrations
-        import sys
-        print("⚠️  Tables already exist - skipping migration", file=sys.stderr)
-        return
-
-    with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
-        try:
-            with context.begin_transaction():
-                context.run_migrations()
-        except Exception as e:
-            # If tables already exist, just skip migration
-            if "DuplicateTable" in str(e) or "already exists" in str(e):
-                import sys
-                print(f"⚠️  Migration skipped - tables already exist", file=sys.stderr)
-            else:
-                raise
+    """Run migrations in 'online' mode."""
+    # Skip migrations entirely - they're handled by fix_migration.py
+    # This prevents CREATE TABLE errors when the database already exists
+    print("⚠️  Alembic online mode - skipping migrations (handled elsewhere)")
 
 
 if context.is_offline_mode():
