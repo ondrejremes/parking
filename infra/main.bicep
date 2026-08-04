@@ -67,6 +67,7 @@ module keyvault 'modules/keyvault.bicep' = {
       'admin-username': adminUsername
       'admin-password-hash': adminPasswordHash
       'acs-connection-string': acsConnectionString
+      'email-from': emailFrom
     }
   }
 }

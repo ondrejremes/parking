@@ -95,6 +95,7 @@ resource app 'Microsoft.App/containerApps@2023-11-02-preview' = {
         { name: 'admin-username',      keyVaultUrl: '${kvRef}/admin-username',      identity: identity.id }
         { name: 'admin-password-hash', keyVaultUrl: '${kvRef}/admin-password-hash', identity: identity.id }
         { name: 'acs-connection-str',  keyVaultUrl: '${kvRef}/acs-connection-string', identity: identity.id }
+        { name: 'email-from',          keyVaultUrl: '${kvRef}/email-from',          identity: identity.id }
       ]
     }
     template: {
