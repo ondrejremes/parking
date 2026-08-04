@@ -244,10 +244,12 @@ async def send_reservation_reminder(user_email: str, user_name: str, spot: dict,
                 </tr>
             </table>
 
-            <p>Pokud se nemůžete dostavit, zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní.</p>
+            <p><strong>Pokud se nemůžete dostavit:</strong></p>
+            <p>Zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní kolegové. Klikněte na tlačítko níže a vyberte možnost zrušit.</p>
 
             <p style="margin-top: 30px;">
-                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít v aplikaci</a>
+                <a href="{calendar_url}" style="background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px;">❌ Zrušit rezervaci</a>
+                <a href="{calendar_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">🔗 Otevřít kalendář</a>
             </p>
 
             <hr style="margin: 30px 0;">
@@ -264,7 +266,11 @@ připomínáme vám, že máte zítra zarezervované parkovací místo.
 📅 Datum: {date}
 ⏰ Čas: {shift_name}
 
-Pokud se nemůžete dostavit, zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní.
+⚠️ POKUD SE NEMŮŽETE DOSTAVIT:
+Zrušte si prosím rezervaci v aplikaci, aby místo mohli využít ostatní kolegové.
+Přejděte do kalendáře níže a vyberte možnost zrušit.
+
+Otevřít aplikaci: {calendar_url}
 
 Parkování App
 Alintrust"""
