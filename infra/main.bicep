@@ -12,7 +12,7 @@ param containerImage string
 @description('Custom domain for Front Door (e.g. parking.alintrust.cz)')
 param customDomain string = ''
 
-param azureTenantId string
+param azureTenantId string = "d15176d7-e40c-4cae-bff5-11d57e820fbd"
 param emailFrom string = 'DoNotReply@alintrust.cz'
 param reservationHorizonDays int = 31
 
