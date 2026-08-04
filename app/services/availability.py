@@ -170,7 +170,8 @@ def get_week_availability(
             if not ignore_user_restrictions:
                 # If user has an unreleased assigned spot, mark DAY and FULL_DAY on OTHER spots
                 # as blocked (assigned spot covers the day shift 8-18 only)
-                if user_assigned_spot and str(spot.id) != str(user_assigned_spot.id):
+                # BUT: on weekends, the assigned spot is automatically released, so don't block
+                if user_assigned_spot and str(spot.id) != str(user_assigned_spot.id) and not _is_weekend(d):
                     for shift in (Shift.FULL_DAY, Shift.DAY):
                         if day_status[shift] == "free" and (d, shift) not in user_released:
                             day_status[shift] = "blocked"
