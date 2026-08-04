@@ -114,7 +114,7 @@ resource app 'Microsoft.App/containerApps@2023-11-02-preview' = {
             { name: 'AZURE_TENANT_ID',           value: azureTenantId }
             { name: 'AZURE_REDIRECT_URI',        value: azureRedirectUri }
             { name: 'BASE_URL',                  value: baseUrl }
-            { name: 'EMAIL_FROM',                value: emailFrom }
+            { name: 'EMAIL_FROM',                secretRef: 'email-from' }
             { name: 'RESERVATION_HORIZON_DAYS',  value: string(reservationHorizonDays) }
           ]
         }
