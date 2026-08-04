@@ -148,6 +148,7 @@ resource reminderJob 'Microsoft.App/jobs@2023-11-02-preview' = {
       secrets: [
         { name: 'db-url',            keyVaultUrl: '${kvRef}/db-url',            identity: identity.id }
         { name: 'acs-connection-str', keyVaultUrl: '${kvRef}/acs-connection-string', identity: identity.id }
+        { name: 'email-from',        keyVaultUrl: '${kvRef}/email-from',        identity: identity.id }
       ]
     }
     template: {
@@ -160,6 +161,7 @@ resource reminderJob 'Microsoft.App/jobs@2023-11-02-preview' = {
           env: [
             { name: 'DATABASE_URL',          secretRef: 'db-url' }
             { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-str' }
+            { name: 'EMAIL_FROM',            secretRef: 'email-from' }
           ]
         }
       ]
