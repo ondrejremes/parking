@@ -140,7 +140,7 @@ resource reminderJob 'Microsoft.App/jobs@2023-11-02-preview' = {
     configuration: {
       triggerType: 'Schedule'
       replicaTimeout: 300
-      scheduleTriggerConfig: { cronExpression: '0 7 * * *', replicaCompletionCount: 1 }
+      scheduleTriggerConfig: { cronExpression: '0 19 * * *', replicaCompletionCount: 1 }
       registries: [
         { server: acrLoginServer, identity: identity.id }
       ]
