@@ -70,7 +70,19 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 
 ## 4. Build & Deploy do Azure
 
-### 4.1 Build Docker image
+### ⚠️ DŮLEŽITÉ: Použij DEPLOYMENT_GUIDE.md
+
+Místo ruční Docker práce níže, **podívej se na [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Moderní Deployment Workflow**:
+- Obsahuje step-by-step instrukce s Azure CLI
+- ACR build pomocí `az acr build` (doporučeno)
+- Bicep deployment pomocí `az deployment group create`
+- Container App update a restart
+
+**Odkaz na konkrétní sekci:** [DEPLOYMENT_GUIDE.md - Moderní Deployment Workflow](DEPLOYMENT_GUIDE.md#-moderní-deployment-workflow-container-app-v-azure)
+
+---
+
+### 4.1 Build Docker image (pro lokální testing)
 ```bash
 docker build -t parking:latest .
 ```
@@ -91,22 +103,42 @@ az acr login --name parkingcr
 docker push parkingcr.azurecr.io/parking:latest
 ```
 
-**Kombinovaně (Build + Push):**
+**LEPŠÍ ALTERNATIVA - Použij `az acr build` (doporučeno):**
 ```bash
-docker build -t parking:latest . && \
-docker tag parking:latest parkingcr.azurecr.io/parking:latest && \
-docker push parkingcr.azurecr.io/parking:latest
+# Viz DEPLOYMENT_GUIDE.md - Step 2
+az acr build --registry parkingcr --image parking:v1.10.9 --file Dockerfile .
 ```
+
+Výhody: 
+- Builduje se přímo v Azure (ne lokálně)
+- Automaticky pushuje do ACR
+- Není potřeba local Docker daemon
 
 ### 4.5 Automatický restart Container App
 Container App se **automaticky restartuje** když detekuje nový image v registru (cca 1-2 minuty).
 
-Pokud se to nestane, můžeš ručně restartovat v Azure Portal:
-1. Jdi na Container App "parking" v resource groupu "Parking"
-2. Klikni na "Revisions and replicas"
-3. Klikni na poslední revizi a klikni "Restart" nebo "Deactivate → Activate"
+Pokud se to nestane, můžeš ručně restartovat dle [DEPLOYMENT_GUIDE.md - Step 4](DEPLOYMENT_GUIDE.md#step-4-container-app-restartupdate):
+```bash
+az containerapp update \
+  --name "parking" \
+  --resource-group "Parking" \
+  --image "parkingcr.azurecr.io/parking:latest"
+```
 
-## 5. Testování aplikace
+## 5. Verifikace nasazení
+
+Sleduj [DEPLOYMENT_GUIDE.md - Step 5](DEPLOYMENT_GUIDE.md#step-5-ověř-deployment):
+```bash
+# Zkontroluj Container App status
+az containerapp show --name "parking" --resource-group "Parking" --query "properties.latestRevisionName"
+
+# Zkontroluj logy
+az containerapp logs show --name "parking" --resource-group "Parking" --tail 20
+```
+
+---
+
+## 6. Testování aplikace
 
 ### 5.1 Funkcionální testy (po deployi)
 
@@ -139,7 +171,7 @@ docker-compose exec -T db psql -U parking -d parking -c \
 docker-compose logs app --tail 50 | grep -i "error\|warning\|startup"
 ```
 
-## 6. Bezpečnostní testy
+## 7. Bezpečnostní testy
 
 ### 6.1 OWASP Top 10 checklist
 
@@ -175,7 +207,23 @@ curl -I https://parking.alintrust.cz | grep -i "strict-transport-security\|x-fra
 - ✅ CONNECTION STRING s sslmode=require
 - ✅ Azure AD managed identity pro auth (ne credentials v kódu)
 
-## 7. Release Notes (volitelné)
+## 7. Zaznamenání do DEPLOYMENT_VERSION.md
+
+Po úspěšném nasazení **aktualizuj [DEPLOYMENT_VERSION.md](DEPLOYMENT_VERSION.md)**:
+- Přidej nový řádek do tabulky s verzí, datem, app version a config changes
+- Aktualizuj "Current State" sekci
+- Zaznamenaj status ✅ nebo ❌
+
+Příklad:
+```markdown
+| 12 | v1.10.9-deploy.12 | 2026-08-04 | v1.10.9 | Weekend fix + SSO tenant ID | ✅ |
+```
+
+Toto slouží jako historický záznam pro PM/QA aby viděli co běží na produkci.
+
+---
+
+## 8. Release Notes (volitelné)
 
 Při release vytvoř soubor `RELEASE_NOTES_v1.8.2.md`:
 
@@ -199,7 +247,7 @@ Při release vytvoř soubor `RELEASE_NOTES_v1.8.2.md`:
 - Database: parking-pg (Azure PostgreSQL)
 ```
 
-## 8. Checklist před pushnutím
+## 9. Checklist před pushnutím
 
 - [ ] Všechny testy projdou lokálně (`docker-compose up`)
 - [ ] Žádné `console.error` v browser dev tools
@@ -210,7 +258,7 @@ Při release vytvoř soubor `RELEASE_NOTES_v1.8.2.md`:
 - [ ] HTTPS funguje na produkci
 - [ ] Database migrace jsou aplikovány (pokud jsou)
 
-## Příklad: Kompletní release flow
+## 10. Příklad: Kompletní release flow
 
 ```bash
 # 1. Feature branch
@@ -251,7 +299,9 @@ git merge feature/new-notification
 # Zkontroluj logy
 ```
 
-## Troubleshooting
+## 11. Troubleshooting
+
+Viz také [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) pro deployment-specific problémy.
 
 **Docker image se nepushuje:**
 ```bash
