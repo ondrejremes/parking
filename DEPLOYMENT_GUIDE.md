@@ -305,6 +305,127 @@ Výsledek: **v1.4.4 je live bez ručního restartu v Azure Portal!**
 
 ---
 
+## 🚀 Moderní Deployment Workflow (Container App v Azure)
+
+Tento workflow je vyvinutý a testovaný pro Azure Container Apps s private networking.
+
+### Step 1: Code Changes & Git Commit
+```bash
+# 1. Udělej změny
+nano app/services/email_notifications.py
+
+# 2. Commitni změny
+git add -A
+git commit -m "fix: email sender configuration"
+git push origin main
+```
+
+### Step 2: Build Docker Image v Azure Container Registry
+```bash
+# Build image v ACR (bez lokálního docker pull/push)
+az acr build \
+  --registry parkingcr \
+  --image parking:v1.10.8 \
+  --file Dockerfile \
+  .
+```
+**Výhody:**
+- Nemusíš mít Docker lokálně
+- Image se builduje přímo v Azure
+- Automaticky se pushuje do ACR
+- Rychlejší, bez network latency
+
+### Step 3: Deploy Infrastructure s Bicep
+```bash
+# Získej všechny secrets z Key Vault
+KV_NAME="parkingkv6m3jne5o3mnpq"
+ADMIN_USERNAME=$(az keyvault secret show --vault-name "$KV_NAME" --name admin-username --query value -o tsv)
+# ... zbylé secrets ...
+
+# Deploy Bicep šablony
+az deployment group create \
+  --name "parking-deploy-$(date +%s)" \
+  --resource-group "Parking" \
+  --template-file infra/main.bicep \
+  --parameters \
+    containerImage="parkingcr.azurecr.io/parking:v1.10.8" \
+    azureTenantId="$(az account show --query tenantId -o tsv)" \
+    adminUsername="$ADMIN_USERNAME" \
+    adminPasswordHash="$ADMIN_PASSWORD_HASH" \
+    azureClientId="$AZURE_CLIENT_ID" \
+    azureClientSecret="$AZURE_CLIENT_SECRET" \
+    sessionSecret="$SESSION_SECRET" \
+    acsConnectionString="$ACS_CONNECTION_STRING"
+```
+
+**Co Bicep dělá:**
+- Aktualizuje Container App configuration
+- Updatuje secrets v Key Vault
+- Updatuje reminder job schedule
+- Konfiguruje email sender, database, authentication, atd.
+
+### Step 4: Container App Restart/Update
+```bash
+# Metoda 1: Update image (preferovaně s latest tag)
+az containerapp update \
+  --name "parking" \
+  --resource-group "Parking" \
+  --image "parkingcr.azurecr.io/parking:latest"
+
+# Metoda 2: REST API pro přímou aktualizaci env variables
+az rest --method PATCH \
+  --uri "/subscriptions/<id>/resourceGroups/Parking/providers/Microsoft.App/containerapps/parking?api-version=2023-11-02-preview" \
+  --body @- <<'EOF'
+{
+  "properties": {
+    "template": {
+      "containers": [
+        {
+          "name": "parking",
+          "image": "parkingcr.azurecr.io/parking:latest",
+          "env": [
+            {
+              "name": "EMAIL_FROM",
+              "secretRef": "email-from"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+EOF
+```
+
+**Pozor:** 
+- Container App se restartuje při image change
+- Nová revize se vytvoří automaticky
+- Čekej 2-3 minuty na startup
+
+### Step 5: Ověř Deployment
+```bash
+# Zkontroluj Container App status
+az containerapp show \
+  --name "parking" \
+  --resource-group "Parking" \
+  --query "properties.latestRevisionName"
+
+# Zkontroluj logs
+az containerapp logs show \
+  --name "parking" \
+  --resource-group "Parking" \
+  --tail 20 \
+  --follow=false
+
+# Zkontroluj email configuration
+az containerapp show \
+  --name "parking" \
+  --resource-group "Parking" \
+  --query "properties.template.containers[0].env[?name=='EMAIL_FROM']"
+```
+
+---
+
 ## 🎯 Future Improvements
 
 1. Přidat service principal oprávnění na Container App restart
